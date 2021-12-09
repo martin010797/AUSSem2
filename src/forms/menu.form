@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="forms.menu">
+  <grid id="27dc6" binding="MenuPanel" layout-manager="GridLayoutManager" row-count="20" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+    <margin top="5" left="5" bottom="5" right="5"/>
+    <constraints>
+      <xy x="20" y="20" width="500" height="709"/>
+    </constraints>
+    <properties/>
+    <border type="none"/>
+    <children>
+      <component id="c18bf" class="javax.swing.JButton" binding="Button1">
+        <constraints>
+          <grid row="0" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="1. Vloz PCR test"/>
+        </properties>
+      </component>
+      <component id="b3225" class="javax.swing.JButton" binding="Button2">
+        <constraints>
+          <grid row="1" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="2. Vyhladaj vysledok pre pacienta"/>
+        </properties>
+      </component>
+      <component id="95ee" class="javax.swing.JButton" binding="Button4">
+        <constraints>
+          <grid row="3" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="4. Vypis pozitivnych testov za zadane obdobie pre okres"/>
+        </properties>
+      </component>
+      <component id="555aa" class="javax.swing.JButton" binding="Button15">
+        <constraints>
+          <grid row="14" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="15. Vsetky testy uskutocnene za zadane obdobie vo vybranom pracovisku"/>
+        </properties>
+      </component>
+      <component id="6d2e0" class="javax.swing.JButton" binding="Button17">
+        <constraints>
+          <grid row="16" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="17. Vloz osobu"/>
+        </properties>
+      </component>
+      <component id="d7c75" class="javax.swing.JButton" binding="Button3">
+        <constraints>
+          <grid row="2" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="3. Vypis testov pre pacienta"/>
+        </properties>
+      </component>
+      <component id="9daa1" class="javax.swing.JButton" binding="Button5">
+        <constraints>
+          <grid row="4" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="5. Vypis testov za zadane obdobie pre okres"/>
+        </properties>
+      </component>
+      <component id="ee63d" class="javax.swing.JButton" binding="Button6">
+        <constraints>
+          <grid row="5" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="6. Vypis pozitivnych testov za zadane obdobie pre kraj"/>
+        </properties>
+      </component>
+      <component id="2e066" class="javax.swing.JButton" binding="Button7">
+        <constraints>
+          <grid row="6" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="7. Vypis testov za zadane obdobie pre kraj"/>
+        </properties>
+      </component>
+      <component id="67b38" class="javax.swing.JButton" binding="Button8">
+        <constraints>
+          <grid row="7" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="8. Vypis vsetkych pozitivnych testov za zadane obdobie"/>
+        </properties>
+      </component>
+      <component id="7c8cf" class="javax.swing.JButton" binding="Button9">
+        <constraints>
+          <grid row="8" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="9. Vypis vsetkych testov za zadane obdobie"/>
+        </properties>
+      </component>
+      <component id="bfd4d" class="javax.swing.JButton" binding="Button10">
+        <constraints>
+          <grid row="9" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="10. Vypis chorych osob v okrese pre zadany datum"/>
+        </properties>
+      </component>
+      <component id="78141" class="javax.swing.JButton" binding="Button11">
+        <constraints>
+          <grid row="10" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="11. Vypis chorych osob v kraji pre zadany datum"/>
+        </properties>
+      </component>
+      <component id="ce3ef" class="javax.swing.JButton" binding="Button12">
+        <constraints>
+          <grid row="11" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="12. Vypis chorych osob pre zadany datum"/>
+        </properties>
+      </component>
+      <component id="f4a5d" class="javax.swing.JButton" binding="Button13">
+        <constraints>
+          <grid row="12" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="13. Vypis okresov zoradenych podla poctu chorych pre zadany datum"/>
+        </properties>
+      </component>
+      <component id="525d3" class="javax.swing.JButton" binding="Button14">
+        <constraints>
+          <grid row="13" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="14. Vypis krajov zoradenych podla poctu chorych pre zadany datum"/>
+        </properties>
+      </component>
+      <component id="b1e12" class="javax.swing.JButton" binding="Button16">
+        <constraints>
+          <grid row="15" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="16. Vyhladanie PCR testu"/>
+        </properties>
+      </component>
+      <component id="80b79" class="javax.swing.JButton" binding="Button18">
+        <constraints>
+          <grid row="17" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="18. Vymaz PCR test"/>
+        </properties>
+      </component>
+      <component id="38731" class="javax.swing.JButton" binding="Button19">
+        <constraints>
+          <grid row="18" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="19. Vymaz osobu aj s jej testami"/>
+        </properties>
+      </component>
+      <component id="c7175" class="javax.swing.JButton" binding="loadDataButton">
+        <constraints>
+          <grid row="19" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="Nacitat data zo suboru"/>
+        </properties>
+      </component>
+      <component id="68b58" class="javax.swing.JButton" binding="saveDataButton">
+        <constraints>
+          <grid row="19" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <text value="Ulozit data do suboru"/>
+        </properties>
+      </component>
+    </children>
+  </grid>
+</form>
