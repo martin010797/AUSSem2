@@ -1,4 +1,4 @@
-package Tests;
+/*package Tests;
 
 import Structure.BST23;
 import Structure.BST23Node;
@@ -287,4 +287,4 @@ public class GeneratorOfData {
             System.out.println(((TestKey)listOfFoundNodes.get(i).get_data1()).getKey());
         }
     }
-}
+}*/

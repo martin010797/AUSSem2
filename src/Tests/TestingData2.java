@@ -4,34 +4,34 @@ import Structure.IData;
 
 import java.io.*;
 
-public class TestingData implements IData<TestingData> {
+public class TestingData2 implements IData<TestingData2> {
+
     private static final int MAX_LENGTH_OF_STRING = 15;
     private static final int UNDEFINED = -1;
     private static final String EMPTY = "";
 
-    private int id;
-    private int testInteger;
     private String testString;
+    private int testInteger;
+    private double testDouble;
     private boolean isValid;
 
-    public TestingData(){
-        id = -1;
+    public TestingData2(){
         testInteger = UNDEFINED;
+        testDouble = UNDEFINED;
         testString = EMPTY;
         isValid = false;
     }
 
-    public TestingData(int id, int testInteger, String testString) {
-        //konstruktor je pre vvytvaranie dat ktore sa budu vkladat
-        this.id = id;
-        this.testInteger = testInteger;
+    public TestingData2(String testString, int testInteger, double testDouble) {
         this.testString = testString;
+        this.testInteger = testInteger;
+        this.testDouble = testDouble;
         isValid = true;
     }
 
     @Override
-    public TestingData createClass() {
-        return new TestingData();
+    public TestingData2 createClass() {
+        return new TestingData2();
     }
 
     @Override
@@ -40,8 +40,6 @@ public class TestingData implements IData<TestingData> {
         DataOutputStream hlpOutStream = new DataOutputStream(hlpByteArrayOutputStream);
 
         try{
-            hlpOutStream.writeInt(id);
-            hlpOutStream.writeInt(testInteger);
             int stringLength = testString.length();
             //ukladanie poctu platnych znakov pre string
             hlpOutStream.writeInt(stringLength);
@@ -52,6 +50,8 @@ public class TestingData implements IData<TestingData> {
                 stringLength++;
             }
             hlpOutStream.writeChars(unusedChars);
+            hlpOutStream.writeInt(testInteger);
+            hlpOutStream.writeDouble(testDouble);
             hlpOutStream.writeBoolean(isValid);
             return hlpByteArrayOutputStream.toByteArray();
         }catch (IOException e){
@@ -65,13 +65,13 @@ public class TestingData implements IData<TestingData> {
         DataInputStream hlpInStream = new DataInputStream(hlpByteArrayInputStream);
 
         try {
-            id = hlpInStream.readInt();
-            testInteger = hlpInStream.readInt();
             int validCharsInString = hlpInStream.readInt();
             for (int i = 0; i < MAX_LENGTH_OF_STRING; i++){
                 testString += hlpInStream.readChar();
             }
             testString = testString.substring(0,validCharsInString);
+            testInteger = hlpInStream.readInt();
+            testDouble = hlpInStream.readDouble();
             isValid = hlpInStream.readBoolean();
         } catch (IOException e) {
             throw new IllegalStateException("Error during conversion from byte array.");
@@ -80,10 +80,7 @@ public class TestingData implements IData<TestingData> {
 
     @Override
     public int getSize() {
-        //Integer: id, testovaci integer, velkost validnych charakterov v stringu
-        //String(characters): jedna string testovacia hodnota
-        //Boolean: ci je dana hodnota platna alebo vymazana(len 1 byte)
-        return ((3*Integer.BYTES)+(MAX_LENGTH_OF_STRING*Character.BYTES)+1);
+        return ((Double.BYTES)+(2*Integer.BYTES)+(MAX_LENGTH_OF_STRING*Character.BYTES)+1);
     }
 
     @Override
@@ -96,27 +93,15 @@ public class TestingData implements IData<TestingData> {
         isValid = pValid;
     }
 
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
+    public String getTestString() {
+        return testString;
     }
 
     public int getTestInteger() {
         return testInteger;
     }
 
-    public void setTestInteger(int testInteger) {
-        this.testInteger = testInteger;
-    }
-
-    public String getTestString() {
-        return testString;
-    }
-
-    public void setTestString(String testString) {
-        this.testString = testString;
+    public double getTestDouble() {
+        return testDouble;
     }
 }

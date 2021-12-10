@@ -1,6 +1,6 @@
 package Structure;
 
-public class NodeWithKey<T extends  Comparable<T>, V>{
+public class NodeWithKey<T extends  Comparable<T> & IData, V extends IData>{
     private BST23Node<T,V> node;
     private T key;
 

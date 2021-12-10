@@ -1,22 +1,293 @@
 package Structure;
 
+import java.io.*;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.PriorityQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public class BST23<T extends  Comparable<T>, V> {
+public class BST23<T extends  Comparable<T> & IData, V extends IData> {
+    private static final int UNDEFINED = -1;
+    private static final int HEADER_SIZE = 12;
 
-    private BST23Node<T,V> _root;
+    private RandomAccessFile fileOfRecords;
+    private int numberOfBlocks;
+    private int nextAddress;
+    //front s prazdnymi adresami
+    private PriorityQueue<Integer> invalidRecordsAdrIncr;
+    private PriorityQueue<Integer> invalidRecordsAdrDecr;
+    private String nameOfFileOfRecords;
 
-    public BST23(){
-        _root = null;
+    //private BST23Node<T,V> _root;
+    private int _root;
+
+    private Class<T> classTypeKey;
+    private Class<T> classTypeValue;
+
+    public BST23(String pFileName, Class pClassTypeKey, Class pClassTypeValue){
+        nameOfFileOfRecords = pFileName;
+        classTypeKey = pClassTypeKey;
+        classTypeValue = pClassTypeValue;
+
+        _root = UNDEFINED;
+
+        //otvorenie suboru
+        if (!(new File(pFileName)).exists()){
+            setInitialHeader(pFileName);
+        }else {
+            try {
+                fileOfRecords = new RandomAccessFile(pFileName, "rw");
+                loadHeader();
+            }catch (FileNotFoundException exception){
+                Logger.getLogger(UnsortedFile.class.getName()).log(Level.SEVERE, null, exception);
+            }
+        }
+
+        invalidRecordsAdrIncr = new PriorityQueue<>();
+        invalidRecordsAdrDecr = new PriorityQueue<>(Comparator.reverseOrder());
+        loadPriorityQueuesFromFile();
+    }
+
+    private boolean setInitialHeader(String pFileName){
+        ByteArrayOutputStream hlpByteArrayOutputStream= new ByteArrayOutputStream();
+        DataOutputStream hlpOutStream = new DataOutputStream(hlpByteArrayOutputStream);
+
+        try{
+            //v hlavicke pocet zaznamov v subore(do poctu rata aj prazdne miesta)
+            // a dalsia adresa ak sa nevklada do prazdnych miest
+            hlpOutStream.writeInt(0);
+            hlpOutStream.writeInt(3*Integer.BYTES);
+            hlpOutStream.writeInt(UNDEFINED);
+        }catch (IOException e){
+            return false;
+        }
+
+        //vytvorenie suboru a zapisanie inicializacnych udajov pre hlavicku
+        try {
+            fileOfRecords = new RandomAccessFile(pFileName, "rw");
+            fileOfRecords.seek(0);
+            fileOfRecords.write(hlpByteArrayOutputStream.toByteArray());
+        } catch (IOException exception) {
+            Logger.getLogger(UnsortedFile.class.getName()).log(Level.SEVERE, null, exception);
+            return false;
+        }
+
+        numberOfBlocks = 0;
+        nextAddress = HEADER_SIZE;
+        return true;
+    }
+
+    private boolean loadHeader(){
+        //nacitanie udajov pre hlavicku zo suboru do pola bytov
+        byte[] arrayOfHeaderBytes = new byte[HEADER_SIZE];
+        try {
+            fileOfRecords.seek(0);
+            fileOfRecords.read(arrayOfHeaderBytes);
+        }catch (IOException exception){
+            return false;
+        }
+
+        ByteArrayInputStream hlpByteArrayInputStream = new ByteArrayInputStream(arrayOfHeaderBytes);
+        DataInputStream hlpInStream = new DataInputStream(hlpByteArrayInputStream);
+
+        //priradenie hodnot hlavickovych dat
+        try {
+            numberOfBlocks = hlpInStream.readInt();
+            nextAddress = hlpInStream.readInt();
+            _root = hlpInStream.readInt();
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    private boolean saveHeader(){
+        ByteArrayOutputStream hlpByteArrayOutputStream= new ByteArrayOutputStream();
+        DataOutputStream hlpOutStream = new DataOutputStream(hlpByteArrayOutputStream);
+
+        //vytvorenie pola bytov pre hlavicku
+        try{
+            hlpOutStream.writeInt(numberOfBlocks);
+            hlpOutStream.writeInt(nextAddress);
+            hlpOutStream.writeInt(_root);
+        }catch (IOException e){
+            return false;
+        }
+
+        //vytvorenie suboru a zapisanie udajov pre hlavicku
+        try {
+            fileOfRecords.seek(0);
+            fileOfRecords.write(hlpByteArrayOutputStream.toByteArray());
+        } catch (IOException exception) {
+            Logger.getLogger(UnsortedFile.class.getName()).log(Level.SEVERE, null, exception);
+            return false;
+        }
+        return true;
+    }
+
+    private boolean savePriorityQueuestoFile(){
+        FileWriter csvWriter = null;
+        Iterator incrIterator = invalidRecordsAdrIncr.iterator();
+        Iterator decrIterator = invalidRecordsAdrDecr.iterator();
+        try {
+            csvWriter = new FileWriter(nameOfFileOfRecords + "incr.csv");
+
+            while (incrIterator.hasNext()){
+                csvWriter.append(""+ incrIterator.next());
+                csvWriter.append("\n");
+            }
+            csvWriter.flush();
+            csvWriter.close();
+
+            csvWriter = new FileWriter(nameOfFileOfRecords + "decr.csv");
+            while (decrIterator.hasNext()){
+                csvWriter.append(""+ decrIterator.next());
+                csvWriter.append("\n");
+            }
+            csvWriter.flush();
+            csvWriter.close();
+        }catch (IOException exception){
+            return false;
+        }
+        return true;
+    }
+
+    private boolean loadPriorityQueuesFromFile(){
+        try {
+            BufferedReader incrReader = new BufferedReader(new FileReader(nameOfFileOfRecords + "incr.csv"));
+            String row;
+            while ((row = incrReader.readLine()) != null) {
+                String[] data = row.split(",");
+                if (data[0] != null){
+                    invalidRecordsAdrIncr.add(Integer.parseInt(data[0]));
+                }
+            }
+            incrReader.close();
+
+            BufferedReader decrReader = new BufferedReader(new FileReader(nameOfFileOfRecords + "decr.csv"));
+            while ((row = decrReader.readLine()) != null) {
+                String[] data = row.split(",");
+                if (data[0] != null){
+                    invalidRecordsAdrDecr.add(Integer.parseInt(data[0]));
+                }
+            }
+            decrReader.close();
+        }catch (IOException exception){
+            return false;
+        }
+        return true;
+    }
+
+    private BST23Node getNodeForAddress(int pAddress){
+        if (pAddress<0){
+            return null;
+        }
+        BST23Node node = new BST23Node(classTypeKey, classTypeValue);
+        //nacitanie pola bytov zo suboru
+        byte[] arrayOfDataBytes = new byte[node.getSize()];
+        try {
+            fileOfRecords.seek(pAddress);
+            fileOfRecords.read(arrayOfDataBytes);
+        }catch (IOException exception){
+            return null;
+        }
+        //nacitanie hodnot pre node z pola bytov
+        node.FromByteArray(arrayOfDataBytes);
+        //kontrola platnosti nodu
+        if (node.isValid()){
+            return node;
+        }else {
+            return null;
+        }
+    }
+
+    public boolean endWorkWithFile(){
+        saveHeader();
+        savePriorityQueuestoFile();
+        try {
+            fileOfRecords.close();
+        }catch (IOException exception){
+            return false;
+        }
+        return true;
+    }
+
+    private boolean invalidateNode(BST23Node pNode){
+        pNode.setValid(false);
+        pNode.set_left1(UNDEFINED);
+        pNode.set_right1(UNDEFINED);
+        pNode.set_left2(UNDEFINED);
+        pNode.set_right2(UNDEFINED);
+        pNode.set_data1(null);
+        pNode.set_data2(null);
+        pNode.set_value1(null);
+        pNode.set_value2(null);
+        pNode.set_isThreeNode(false);
+        long lengthOfFile = 0;
+        try {
+            lengthOfFile = fileOfRecords.length();
+        }catch (IOException exception){
+            return false;
+        }
+        //ak je na konci suboru tak skratit subor
+        if(pNode.get_address() == (lengthOfFile - pNode.getSize())){
+            int numberOfEmptySpaces = 1;
+            Integer unusedAddress = invalidRecordsAdrDecr.peek();
+            while (unusedAddress != null && unusedAddress == (pNode.get_address() - pNode.getSize() * numberOfEmptySpaces)){
+                invalidRecordsAdrIncr.remove(unusedAddress);
+                invalidRecordsAdrDecr.poll();
+                numberOfEmptySpaces++;
+                unusedAddress = invalidRecordsAdrDecr.peek();
+            }
+            try {
+                fileOfRecords.setLength(lengthOfFile - (numberOfEmptySpaces * pNode.getSize()));
+            }catch (IOException exception){
+                return false;
+            }
+            numberOfBlocks -= numberOfEmptySpaces;
+            nextAddress = numberOfBlocks * pNode.getSize() + HEADER_SIZE;
+            return true;
+        }else {
+            //pridat do prioritneho frontu nepouzitu adresu
+            invalidRecordsAdrIncr.add(pNode.get_address());
+            invalidRecordsAdrDecr.add(pNode.get_address());
+            //ulozenie upravenych dat(upravena validita zaznamu)
+            byte[] arrayOfDeletedBytes = pNode.ToByteArray();
+            try {
+                fileOfRecords.seek(pNode.get_address());
+                fileOfRecords.write(arrayOfDeletedBytes);
+            }catch (IOException exception){
+                return false;
+            }
+            return true;
+        }
+    }
+
+    private boolean setTreeEmpty(){
+        try {
+            fileOfRecords.setLength(HEADER_SIZE);
+            nextAddress = HEADER_SIZE;
+            numberOfBlocks = 0;
+            _root = UNDEFINED;
+            invalidRecordsAdrIncr.clear();
+            invalidRecordsAdrDecr.clear();
+            return true;
+        }catch (IOException exception){
+            return false;
+        }
     }
 
     //robene podla prednaskoveho pseudkokodu v kombinacii s poskytnutou strankou z elearningu na vizualizaciu
     public boolean delete(BST23Node pNode){
         BST23Node deletedNode = find(pNode);
         if (deletedNode != null){
-            if (deletedNode == _root && isLeaf(deletedNode) && !deletedNode.isThreeNode()){
+            if (deletedNode.get_address() == _root && isLeaf(deletedNode) && !deletedNode.isThreeNode()){
                 //jediny prvok v strome tak sa zmaze referencia na root
-                _root = null;
+                //deleteDataFromFile(_root,FIRST_DATA_IN_NODE);
+                setTreeEmpty();
+                //_root = null;
                 return true;
             }
             if (deletedNode.isThreeNode() && isLeaf(deletedNode)){
@@ -26,34 +297,40 @@ public class BST23<T extends  Comparable<T>, V> {
                     deletedNode.set_data2(null);
                     deletedNode.set_value2(null);
                     deletedNode.set_isThreeNode(false);
+                    insertToFileOnAddress(deletedNode,deletedNode.get_address());
                     return true;
                 }else if (pNode.get_data1().compareTo(deletedNode.get_data2()) == 0){
                     deletedNode.set_data2(null);
                     deletedNode.set_value2(null);
                     deletedNode.set_isThreeNode(false);
+                    insertToFileOnAddress(deletedNode,deletedNode.get_address());
                     return true;
                 }
             }
-            BST23Node alterNode = findInOrderNode(deletedNode, pNode);
+            BST23Node<T,V> alterNode = findInOrderNode(deletedNode, pNode);
             if (alterNode != null && alterNode.isThreeNode()){
                 //jeho nasledovnik je 3 vrchol
                 if (pNode.get_data1().compareTo(deletedNode.get_data1()) == 0){
                     deletedNode.set_data1(alterNode.get_data1());
                     deletedNode.set_value1(alterNode.get_value1());
+                    insertToFileOnAddress(deletedNode,deletedNode.get_address());
                     alterNode.set_data1(alterNode.get_data2());
                     alterNode.set_value1(alterNode.get_value2());
                     alterNode.set_data2(null);
                     alterNode.set_value2(null);
                     alterNode.set_isThreeNode(false);
+                    insertToFileOnAddress(alterNode,alterNode.get_address());
                     return true;
                 }else if (pNode.get_data1().compareTo(deletedNode.get_data2()) == 0){
                     deletedNode.set_data2(alterNode.get_data1());
                     deletedNode.set_value2(alterNode.get_value1());
+                    insertToFileOnAddress(deletedNode,deletedNode.get_address());
                     alterNode.set_data1(alterNode.get_data2());
                     alterNode.set_value1(alterNode.get_value2());
                     alterNode.set_data2(null);
                     alterNode.set_value2(null);
                     alterNode.set_isThreeNode(false);
+                    insertToFileOnAddress(alterNode,alterNode.get_address());
                     return true;
                 }
             }
@@ -61,34 +338,44 @@ public class BST23<T extends  Comparable<T>, V> {
             if (pNode.get_data1().compareTo(deletedNode.get_data1()) == 0){
                 deletedNode.set_data1(alterNode.get_data1());
                 deletedNode.set_value1(alterNode.get_value1());
+                insertToFileOnAddress(deletedNode,deletedNode.get_address());
             }else if (pNode.get_data1().compareTo(deletedNode.get_data2()) == 0){
                 deletedNode.set_data2(alterNode.get_data1());
                 deletedNode.set_value2(alterNode.get_value1());
+                insertToFileOnAddress(deletedNode,deletedNode.get_address());
             }
             while (alterNode != null){
-                if(alterNode == _root){
-                    if (alterNode.get_left1() == null && alterNode.get_right1() == null){
-                        _root = null;
+                if(alterNode.get_address() == _root){
+                    if (alterNode.get_left1() == UNDEFINED && alterNode.get_right1() == UNDEFINED){
+                        setTreeEmpty();
+                        //_root = null;
                         return true;
-                    }else if (alterNode.get_left1() != null && alterNode.get_right1() == null){
+                    }else if (alterNode.get_left1() != UNDEFINED && alterNode.get_right1() == UNDEFINED){
                         _root = alterNode.get_left1();
-                        _root.set_parent(null);
+                        invalidateNode(alterNode);
+                        BST23Node rootNode = getNodeForAddress(_root);
+                        rootNode.set_parent(UNDEFINED);
+                        insertToFileOnAddress(rootNode,rootNode.get_address());
                         return true;
-                    }else if(alterNode.get_left1() == null && alterNode.get_right1() != null){
+                    }else if(alterNode.get_left1() == UNDEFINED && alterNode.get_right1() != UNDEFINED){
                         _root = alterNode.get_right1();
-                        _root.set_parent(null);
+                        invalidateNode(alterNode);
+                        BST23Node rootNode = getNodeForAddress(_root);
+                        rootNode.set_parent(UNDEFINED);
+                        insertToFileOnAddress(rootNode,rootNode.get_address());
                         return true;
                     }
                 }
-                BST23Node brotherNode = findBrother(alterNode);
+                BST23Node<T,V> brotherNode = findBrother(alterNode);
                 if (brotherNode.isThreeNode()){
+                    BST23Node<T,V> alterNodeParentNode = getNodeForAddress(alterNode.get_parent());
                     //Ko presuniem na prazdne miesto a z brata presuniem do otca
-                    if (alterNode.get_parent().get_left1() == alterNode){
+                    if (alterNodeParentNode.get_left1() == alterNode.get_address()){
                         //prazdne miesto je vlavo od otca takze sa vykonava lava rotacia
-                        alterNode.set_data1(alterNode.get_parent().get_data1());
-                        alterNode.set_value1(alterNode.get_parent().get_value1());
-                        alterNode.get_parent().set_data1(brotherNode.get_data1());
-                        alterNode.get_parent().set_value1(brotherNode.get_value1());
+                        alterNode.set_data1(alterNodeParentNode.get_data1());
+                        alterNode.set_value1(alterNodeParentNode.get_value1());
+                        alterNodeParentNode.set_data1(brotherNode.get_data1());
+                        alterNodeParentNode.set_value1(brotherNode.get_value1());
 
                         brotherNode.set_data1(brotherNode.get_data2());
                         brotherNode.set_value1(brotherNode.get_value2());
@@ -97,79 +384,95 @@ public class BST23<T extends  Comparable<T>, V> {
                         brotherNode.set_isThreeNode(false);
 
                         //nastavenie referencii
-                        if ((alterNode.get_left1() != null || alterNode.get_right1() != null) &&
-                                (brotherNode.get_left1() != null)) {
-                            /*if (alterNode.get_right1() != null && alterNode.get_left1() == null){
-                                System.out.println("chyba ");
-                            }*/
+                        if ((alterNode.get_left1() != UNDEFINED || alterNode.get_right1() != UNDEFINED) &&
+                                (brotherNode.get_left1() != UNDEFINED)) {
                             //ak maju v aj jeho brat synov tak uprav referecnie
                             alterNode.set_right1(brotherNode.get_left1());
-                            brotherNode.get_left1().set_parent(alterNode);
+                            BST23Node<T,V> brotherNodeLeftNode = getNodeForAddress(brotherNode.get_left1());
+                            brotherNodeLeftNode.set_parent(alterNode.get_address());
                             brotherNode.set_left1(brotherNode.get_right1());
                             brotherNode.set_right1(brotherNode.get_right2());
-                            brotherNode.set_right2(null);
-                            brotherNode.set_left2(null);
+                            brotherNode.set_right2(UNDEFINED);
+                            brotherNode.set_left2(UNDEFINED);
+
+                            insertToFileOnAddress(brotherNodeLeftNode,brotherNodeLeftNode.get_address());
                         }
+                        insertToFileOnAddress(brotherNode,brotherNode.get_address());
+                        insertToFileOnAddress(alterNode,alterNode.get_address());
+                        insertToFileOnAddress(alterNodeParentNode,alterNodeParentNode.get_address());
                         return true;
                     }
-                    if(alterNode.get_parent().get_right2() != null && alterNode.get_parent().get_right2() == alterNode){
+                    if(alterNodeParentNode.get_right2() != UNDEFINED && alterNodeParentNode.get_right2() == alterNode.get_address()){
                         //prazdne miesto je napravo od otca takze sa vykonava prava rotacia
-                        alterNode.set_data1(alterNode.get_parent().get_data2());
-                        alterNode.set_value1(alterNode.get_parent().get_value2());
-                        alterNode.get_parent().set_data2(brotherNode.get_data2());
-                        alterNode.get_parent().set_value2(brotherNode.get_value2());
+                        alterNode.set_data1(alterNodeParentNode.get_data2());
+                        alterNode.set_value1(alterNodeParentNode.get_value2());
+                        alterNodeParentNode.set_data2(brotherNode.get_data2());
+                        alterNodeParentNode.set_value2(brotherNode.get_value2());
 
                         brotherNode.set_data2(null);
                         brotherNode.set_value2(null);
                         brotherNode.set_isThreeNode(false);
 
                         //nastavenie referencii
-                        if ((alterNode.get_left1() != null || alterNode.get_right1() != null) &&
-                                (brotherNode.get_left1() != null)) {
-                            if (alterNode.get_left1() != null && alterNode.get_right1() == null){
+                        if ((alterNode.get_left1() != UNDEFINED || alterNode.get_right1() != UNDEFINED) &&
+                                (brotherNode.get_left1() != UNDEFINED)) {
+                            if (alterNode.get_left1() != UNDEFINED && alterNode.get_right1() == UNDEFINED){
                                 alterNode.set_right1(alterNode.get_left1());
-                                alterNode.set_left1(null);
+                                alterNode.set_left1(UNDEFINED);
                             }
                             //ak maju v aj jeho brat synov tak uprav referecnie
                             alterNode.set_left1(brotherNode.get_right2());
-                            brotherNode.get_right2().set_parent(alterNode);
-                            brotherNode.set_right2(null);
-                            brotherNode.set_left2(null);
+                            BST23Node<T,V> brotherNodeRight2Node = getNodeForAddress(brotherNode.get_right2());
+                            brotherNodeRight2Node.set_parent(alterNode.get_address());
+                            brotherNode.set_right2(UNDEFINED);
+                            brotherNode.set_left2(UNDEFINED);
+
+                            insertToFileOnAddress(brotherNodeRight2Node,brotherNodeRight2Node.get_address());
                         }
+                        //update alternode, alternodeparentnode, brothernode
+                        insertToFileOnAddress(alterNode,alterNode.get_address());
+                        insertToFileOnAddress(alterNodeParentNode,alterNodeParentNode.get_address());
+                        insertToFileOnAddress(brotherNode,brotherNode.get_address());
                         return true;
                     }
-                    if (alterNode.get_parent().get_left1() == brotherNode){
+                    if (alterNodeParentNode.get_left1() == brotherNode.get_address()){
                         //brat je nalavo od otca, cize prazdne miesto je v strede takze sa vykonava prava rotacia
-                        alterNode.set_data1(alterNode.get_parent().get_data1());
-                        alterNode.set_value1(alterNode.get_parent().get_value1());
-                        alterNode.get_parent().set_data1(brotherNode.get_data2());
-                        alterNode.get_parent().set_value1(brotherNode.get_value2());
+                        alterNode.set_data1(alterNodeParentNode.get_data1());
+                        alterNode.set_value1(alterNodeParentNode.get_value1());
+                        alterNodeParentNode.set_data1(brotherNode.get_data2());
+                        alterNodeParentNode.set_value1(brotherNode.get_value2());
 
                         brotherNode.set_data2(null);
                         brotherNode.set_value2(null);
                         brotherNode.set_isThreeNode(false);
 
                         //nastavenie referencii
-                        if ((alterNode.get_left1() != null || alterNode.get_right1() != null) &&
-                                (brotherNode.get_left1() != null)){
+                        if ((alterNode.get_left1() != UNDEFINED || alterNode.get_right1() != UNDEFINED) &&
+                                (brotherNode.get_left1() != UNDEFINED)){
                             //ak maju v aj jeho brat synov tak uprav referecnie
-                            if (alterNode.get_left1() != null && alterNode.get_right1() == null){
+                            if (alterNode.get_left1() != UNDEFINED && alterNode.get_right1() == UNDEFINED){
                                 alterNode.set_right1(alterNode.get_left1());
-                                alterNode.set_left1(null);
+                                alterNode.set_left1(UNDEFINED);
                             }
                             alterNode.set_left1(brotherNode.get_right2());
-                            brotherNode.get_right2().set_parent(alterNode);
-                            brotherNode.set_right2(null);
-                            brotherNode.set_left2(null);
+                            BST23Node<T,V> brotherNodeRight2Node = getNodeForAddress(brotherNode.get_right2());
+                            brotherNodeRight2Node.set_parent(alterNode.get_address());
+                            brotherNode.set_right2(UNDEFINED);
+                            brotherNode.set_left2(UNDEFINED);
+
+                            insertToFileOnAddress(brotherNodeRight2Node,brotherNodeRight2Node.get_address());
                         }
+                        insertToFileOnAddress(alterNode,alterNode.get_address());
+                        insertToFileOnAddress(alterNodeParentNode,alterNodeParentNode.get_address());
+                        insertToFileOnAddress(brotherNode,brotherNode.get_address());
                         return true;
                     }
-                    if (alterNode.get_parent().get_right2() != null && alterNode.get_parent().get_right2() == brotherNode){
+                    if (alterNodeParentNode.get_right2() != UNDEFINED && alterNodeParentNode.get_right2() == brotherNode.get_address()){
                         //brat je napravo od otcovho druheho prvku, cize prazdne miesto je v strede takze sa vykonava lava rotacia
-                        alterNode.set_data1(alterNode.get_parent().get_data2());
-                        alterNode.set_value1(alterNode.get_parent().get_value2());
-                        alterNode.get_parent().set_data2(brotherNode.get_data1());
-                        alterNode.get_parent().set_value2(brotherNode.get_value1());
+                        alterNode.set_data1(alterNodeParentNode.get_data2());
+                        alterNode.set_value1(alterNodeParentNode.get_value2());
+                        alterNodeParentNode.set_data2(brotherNode.get_data1());
+                        alterNodeParentNode.set_value2(brotherNode.get_value1());
 
                         brotherNode.set_data1(brotherNode.get_data2());
                         brotherNode.set_value1(brotherNode.get_value2());
@@ -178,179 +481,219 @@ public class BST23<T extends  Comparable<T>, V> {
                         brotherNode.set_isThreeNode(false);
 
                         //nastavenie referencii
-                        if ((alterNode.get_left1() != null || alterNode.get_right1() != null) &&
-                                (brotherNode.get_left1() != null)){
+                        if ((alterNode.get_left1() != UNDEFINED || alterNode.get_right1() != UNDEFINED) &&
+                                (brotherNode.get_left1() != UNDEFINED)){
                             //ak maju v aj jeho brat synov tak uprav referecnie
-                            if (alterNode.get_right1() != null && alterNode.get_left1() == null){
+                            if (alterNode.get_right1() != UNDEFINED && alterNode.get_left1() == UNDEFINED){
                                 alterNode.set_left1(alterNode.get_right1());
-                                alterNode.set_right1(null);
+                                alterNode.set_right1(UNDEFINED);
                             }
                             alterNode.set_right1(brotherNode.get_left1());
-                            brotherNode.get_left1().set_parent(alterNode);
+                            BST23Node<T,V> brotherNodeLeft1Node = getNodeForAddress(brotherNode.get_left1());
+                            brotherNodeLeft1Node.set_parent(alterNode.get_address());
                             brotherNode.set_left1(brotherNode.get_right1());
                             brotherNode.set_right1(brotherNode.get_right2());
-                            brotherNode.set_right2(null);
-                            brotherNode.set_left2(null);
+                            brotherNode.set_right2(UNDEFINED);
+                            brotherNode.set_left2(UNDEFINED);
+
+                            insertToFileOnAddress(brotherNodeLeft1Node,brotherNodeLeft1Node.get_address());
                         }
+                        insertToFileOnAddress(alterNode,alterNode.get_address());
+                        insertToFileOnAddress(alterNodeParentNode,alterNodeParentNode.get_address());
+                        insertToFileOnAddress(brotherNode,brotherNode.get_address());
                         return true;
                     }
                 }else {
+                    BST23Node<T,V> alterNodeParentNode = getNodeForAddress(alterNode.get_parent());
                     //brat je len dvojvrchol
-                    if (!alterNode.get_parent().isThreeNode()) {
+                    if (!alterNodeParentNode.isThreeNode()) {
                         //otec je dvojvrchol
-                        if (alterNode.get_parent().get_right1() == brotherNode){
+                        if (alterNodeParentNode.get_right1() == brotherNode.get_address()){
                             //v' je pravy syn
                             brotherNode.set_data2(brotherNode.get_data1());
                             brotherNode.set_value2(brotherNode.get_value1());
-                            brotherNode.set_data1(alterNode.get_parent().get_data1());
-                            brotherNode.set_value1(alterNode.get_parent().get_value1());
+                            brotherNode.set_data1(alterNodeParentNode.get_data1());
+                            brotherNode.set_value1(alterNodeParentNode.get_value1());
                             brotherNode.set_isThreeNode(true);
                             alterNode.set_data1(null);
                             alterNode.set_value1(null);
-                            alterNode.get_parent().set_data1(null);
-                            alterNode.get_parent().set_value1(null);
-                            alterNode.get_parent().set_left1(brotherNode);
-                            alterNode.get_parent().set_right1(null);
+                            alterNodeParentNode.set_data1(null);
+                            alterNodeParentNode.set_value1(null);
+                            alterNodeParentNode.set_left1(brotherNode.get_address());
+                            alterNodeParentNode.set_right1(UNDEFINED);
 
+                            insertToFileOnAddress(alterNodeParentNode,alterNodeParentNode.get_address());
                             if (!isLeaf(alterNode)){
                                 //upravy referencii ak nie su listy
                                 brotherNode.set_right2(brotherNode.get_right1());
                                 brotherNode.set_left2(brotherNode.get_left1());
                                 brotherNode.set_right1(brotherNode.get_left1());
-                                if (alterNode.get_left1() != null){
+                                if (alterNode.get_left1() != UNDEFINED){
                                     brotherNode.set_left1(alterNode.get_left1());
                                 }else {
                                     brotherNode.set_left1(alterNode.get_right1());
                                 }
-                                if (brotherNode.get_left1() != null){
-                                    brotherNode.get_left1().set_parent(brotherNode);
+                                if (brotherNode.get_left1() != UNDEFINED){
+                                    BST23Node<T,V> brotherNodeLeft1Node = getNodeForAddress(brotherNode.get_left1());
+                                    brotherNodeLeft1Node.set_parent(brotherNode.get_address());
+                                    insertToFileOnAddress(brotherNodeLeft1Node,brotherNodeLeft1Node.get_address());
                                 }
-                                if (brotherNode.get_parent().get_parent() == null){
+                                if (getNodeForAddress(brotherNode.get_parent()).get_parent() == UNDEFINED){
                                     //prazdne miesto je v koreni
-                                    _root = brotherNode;
-                                    brotherNode.set_parent(null);
+                                    invalidateNode(alterNode);
+                                    invalidateNode(getNodeForAddress(_root));
+                                    _root = brotherNode.get_address();
+                                    brotherNode.set_parent(UNDEFINED);
+                                    insertToFileOnAddress(brotherNode,brotherNode.get_address());
                                     return true;
                                 }
                             }
+                            insertToFileOnAddress(brotherNode,brotherNode.get_address());
                         }else {
                             //v' je lavy syn
-                            brotherNode.set_data2(alterNode.get_parent().get_data1());
-                            brotherNode.set_value2(alterNode.get_parent().get_value1());
+                            brotherNode.set_data2(alterNodeParentNode.get_data1());
+                            brotherNode.set_value2(alterNodeParentNode.get_value1());
                             brotherNode.set_isThreeNode(true);
                             alterNode.set_data1(null);
                             alterNode.set_value1(null);
-                            alterNode.get_parent().set_data1(null);
-                            alterNode.get_parent().set_value1(null);
-                            alterNode.get_parent().set_right1(null);
-                            alterNode.get_parent().set_left1(brotherNode);
+                            alterNodeParentNode.set_data1(null);
+                            alterNodeParentNode.set_value1(null);
+                            alterNodeParentNode.set_right1(UNDEFINED);
+                            alterNodeParentNode.set_left1(brotherNode.get_address());
 
+                            insertToFileOnAddress(alterNodeParentNode,alterNodeParentNode.get_address());
                             if (!isLeaf(alterNode)){
                                 //upravy referencii ak nie su listy
                                 brotherNode.set_left2(brotherNode.get_right1());
-                                if (alterNode.get_left1() != null){
+                                if (alterNode.get_left1() != UNDEFINED){
                                     brotherNode.set_right2(alterNode.get_left1());
                                 }else {
                                     brotherNode.set_right2(alterNode.get_right1());
                                 }
-                                if (brotherNode.get_right2() != null){
-                                    brotherNode.get_right2().set_parent(brotherNode);
+                                if (brotherNode.get_right2() != UNDEFINED){
+                                    BST23Node<T,V> brotherNodeRight2Node = getNodeForAddress(brotherNode.get_right2());
+                                    brotherNodeRight2Node.set_parent(brotherNode.get_address());
+                                    insertToFileOnAddress(brotherNodeRight2Node,brotherNodeRight2Node.get_address());
                                 }
-                                if (brotherNode.get_parent().get_parent() == null){
+                                if (getNodeForAddress(brotherNode.get_parent()).get_parent() == UNDEFINED){
                                     //prazdne miesto je v koreni
-                                    _root = brotherNode;
-                                    brotherNode.set_parent(null);
+                                    invalidateNode(alterNode);
+                                    invalidateNode(getNodeForAddress(_root));
+                                    _root = brotherNode.get_address();
+                                    brotherNode.set_parent(UNDEFINED);
+                                    insertToFileOnAddress(brotherNode,brotherNode.get_address());
                                     return true;
                                 }
                             }
+                            insertToFileOnAddress(brotherNode,brotherNode.get_address());
                         }
-                        alterNode = alterNode.get_parent();
+                        invalidateNode(alterNode);
+                        alterNode = alterNodeParentNode;
                     }else {
                         //otec je trojvrchol
-                        if (alterNode.get_parent().get_right1() == alterNode ||
-                                alterNode.get_parent().get_right2() == alterNode){
+                        if (alterNodeParentNode.get_right1() == alterNode.get_address() ||
+                                alterNodeParentNode.get_right2() == alterNode.get_address()){
                             //v je v strede alebo uplne napravo
-                            if (alterNode.get_parent().get_right2() == brotherNode){
+                            if (alterNodeParentNode.get_right2() == brotherNode.get_address()){
                                 //v' je uplne napravo
                                 brotherNode.set_data2(brotherNode.get_data1());
                                 brotherNode.set_value2(brotherNode.get_value1());
-                                brotherNode.set_data1(alterNode.get_parent().get_data2());
-                                brotherNode.set_value1(alterNode.get_parent().get_value2());
+                                brotherNode.set_data1(alterNodeParentNode.get_data2());
+                                brotherNode.set_value1(alterNodeParentNode.get_value2());
                                 brotherNode.set_isThreeNode(true);
-                                alterNode.get_parent().set_data2(null);
-                                alterNode.get_parent().set_value2(null);
-                                alterNode.get_parent().set_isThreeNode(false);
-                                alterNode.get_parent().set_right1(brotherNode);
-                                alterNode.get_parent().set_left2(null);
-                                alterNode.get_parent().set_right2(null);
+                                alterNodeParentNode.set_data2(null);
+                                alterNodeParentNode.set_value2(null);
+                                alterNodeParentNode.set_isThreeNode(false);
+                                alterNodeParentNode.set_right1(brotherNode.get_address());
+                                alterNodeParentNode.set_left2(UNDEFINED);
+                                alterNodeParentNode.set_right2(UNDEFINED);
+
+                                insertToFileOnAddress(alterNodeParentNode,alterNodeParentNode.get_address());
                                 if (!isLeaf(alterNode)){
                                     //upravy referencii ak nie su listy
                                     brotherNode.set_right2(brotherNode.get_right1());
                                     brotherNode.set_left2(brotherNode.get_left1());
                                     brotherNode.set_right1(brotherNode.get_left1());
-                                    if (alterNode.get_left1() != null){
+                                    if (alterNode.get_left1() != UNDEFINED){
                                         brotherNode.set_left1(alterNode.get_left1());
                                     }else {
                                         brotherNode.set_left1(alterNode.get_right1());
                                     }
-                                    if (brotherNode.get_left1() != null){
-                                        brotherNode.get_left1().set_parent(brotherNode);
+                                    if (brotherNode.get_left1() != UNDEFINED){
+                                        BST23Node<T,V> brotherNodeLeft1Node = getNodeForAddress(brotherNode.get_left1());
+                                        brotherNodeLeft1Node.set_parent(brotherNode.get_address());
+                                        insertToFileOnAddress(brotherNodeLeft1Node,brotherNodeLeft1Node.get_address());
                                     }
                                 }
+                                insertToFileOnAddress(brotherNode,brotherNode.get_address());
+                                invalidateNode(alterNode);
                                 return true;
                             }else {
                                 //v' je v strede
-                                brotherNode.set_data2(alterNode.get_parent().get_data2());
-                                brotherNode.set_value2(alterNode.get_parent().get_value2());
+                                brotherNode.set_data2(alterNodeParentNode.get_data2());
+                                brotherNode.set_value2(alterNodeParentNode.get_value2());
                                 brotherNode.set_isThreeNode(true);
-                                alterNode.get_parent().set_data2(null);
-                                alterNode.get_parent().set_value2(null);
-                                alterNode.get_parent().set_isThreeNode(false);
-                                alterNode.get_parent().set_left2(null);
-                                alterNode.get_parent().set_right2(null);
+                                alterNodeParentNode.set_data2(null);
+                                alterNodeParentNode.set_value2(null);
+                                alterNodeParentNode.set_isThreeNode(false);
+                                alterNodeParentNode.set_left2(UNDEFINED);
+                                alterNodeParentNode.set_right2(UNDEFINED);
+
+                                insertToFileOnAddress(alterNodeParentNode,alterNodeParentNode.get_address());
                                 if (!isLeaf(alterNode)){
                                     //upravy referencii ak nie su listy
                                     brotherNode.set_left2(brotherNode.get_right1());
-                                    if (alterNode.get_left1() != null){
+                                    if (alterNode.get_left1() != UNDEFINED){
                                         brotherNode.set_right2(alterNode.get_left1());
                                     }else {
                                         brotherNode.set_right2(alterNode.get_right1());
                                     }
-                                    if (brotherNode.get_right2() != null){
-                                        brotherNode.get_right2().set_parent(brotherNode);
+                                    if (brotherNode.get_right2() != UNDEFINED){
+                                        BST23Node<T,V> brotherNodeRight2Node = getNodeForAddress(brotherNode.get_right2());
+                                        brotherNodeRight2Node.set_parent(brotherNode.get_address());
+                                        insertToFileOnAddress(brotherNodeRight2Node,brotherNodeRight2Node.get_address());
                                     }
                                 }
+                                insertToFileOnAddress(brotherNode,brotherNode.get_address());
+                                invalidateNode(alterNode);
                                 return true;
                             }
                         }else {
                             //v je uplne nalavo
                             brotherNode.set_data2(brotherNode.get_data1());
                             brotherNode.set_value2(brotherNode.get_value1());
-                            brotherNode.set_data1(alterNode.get_parent().get_data1());
-                            brotherNode.set_value1(alterNode.get_parent().get_value1());
+                            brotherNode.set_data1(alterNodeParentNode.get_data1());
+                            brotherNode.set_value1(alterNodeParentNode.get_value1());
                             brotherNode.set_isThreeNode(true);
-                            alterNode.get_parent().set_data1(alterNode.get_parent().get_data2());
-                            alterNode.get_parent().set_value1(alterNode.get_parent().get_value2());
-                            alterNode.get_parent().set_data2(null);
-                            alterNode.get_parent().set_value2(null);
-                            alterNode.get_parent().set_isThreeNode(false);
-                            alterNode.get_parent().set_left1(brotherNode);
-                            alterNode.get_parent().set_right1(alterNode.get_parent().get_right2());
-                            alterNode.get_parent().set_left2(null);
-                            alterNode.get_parent().set_right2(null);
+                            alterNodeParentNode.set_data1(alterNodeParentNode.get_data2());
+                            alterNodeParentNode.set_value1(alterNodeParentNode.get_value2());
+                            alterNodeParentNode.set_data2(null);
+                            alterNodeParentNode.set_value2(null);
+                            alterNodeParentNode.set_isThreeNode(false);
+                            alterNodeParentNode.set_left1(brotherNode.get_address());
+                            alterNodeParentNode.set_right1(alterNodeParentNode.get_right2());
+                            alterNodeParentNode.set_left2(UNDEFINED);
+                            alterNodeParentNode.set_right2(UNDEFINED);
+
+                            insertToFileOnAddress(alterNodeParentNode,alterNodeParentNode.get_address());
                             if (!isLeaf(alterNode)){
                                 //upravy referencii ak nie su listy
                                 brotherNode.set_right2(brotherNode.get_right1());
                                 brotherNode.set_left2(brotherNode.get_left1());
                                 brotherNode.set_right1(brotherNode.get_left1());
-                                if (alterNode.get_left1() != null){
+                                if (alterNode.get_left1() != UNDEFINED){
                                     brotherNode.set_left1(alterNode.get_left1());
                                 }else {
                                     brotherNode.set_left1(alterNode.get_right1());
                                 }
-                                if (brotherNode.get_left1() != null){
-                                    brotherNode.get_left1().set_parent(brotherNode);
+                                if (brotherNode.get_left1() != UNDEFINED){
+                                    BST23Node<T,V> brotherNodeLeft1Node = getNodeForAddress(brotherNode.get_left1());
+                                    brotherNodeLeft1Node.set_parent(brotherNode.get_address());
+                                    insertToFileOnAddress(brotherNodeLeft1Node,brotherNodeLeft1Node.get_address());
                                 }
                             }
+                            insertToFileOnAddress(brotherNode,brotherNode.get_address());
+                            invalidateNode(alterNode);
                             return true;
                         }
                     }
@@ -361,29 +704,35 @@ public class BST23<T extends  Comparable<T>, V> {
     }
 
     public BST23Node findBrother(BST23Node node){
-        if (node.get_parent().get_left1() == node){
+        BST23Node parent = getNodeForAddress(node.get_parent());
+        if (parent == null){
+            return null;
+        }
+        //if (getNodeForAddress(parent.get_left1()) == node){
+        if (areNodesEqual(getNodeForAddress(parent.get_left1()),node)){
             //node pre ktoreho hladam brata je uplne lavym synom jeho otca
-            if (node.get_parent().get_right1() != null){
-                return node.get_parent().get_right1();
+            if (getNodeForAddress(parent.get_right1()) != null){
+                return getNodeForAddress(parent.get_right1());
             }
-        }else if(node.get_parent().get_right1() == node){
+        }else if(areNodesEqual(getNodeForAddress(parent.get_right1()),node)){
             //node pre ktoreho hladam brata je pravym synom pre prvy prvok v node jeho otca
-            if (node.get_parent().get_right2() == null){
+            if (getNodeForAddress(parent.get_right2()) == null){
                 //otec ma len dvoch synov
-                return node.get_parent().get_left1();
+                return getNodeForAddress(parent.get_left1());
             }else {
                 //otec ma troch synov cize mam na vyber dvoch bratov
                 //uprednostnujem 3 vrchol
-                if (node.get_parent().get_left1().isThreeNode()){
-                    return node.get_parent().get_left1();
+                if (getNodeForAddress(parent.get_left1()).isThreeNode()){
+                    return getNodeForAddress(parent.get_left1());
                 }else{
-                    return node.get_parent().get_right2();
+                    return getNodeForAddress(parent.get_right2());
                 }
             }
-        }else if(node.get_parent().get_right2() != null && node.get_parent().get_right2() == node){
+        }else if(getNodeForAddress(parent.get_right2()) != null &&
+                areNodesEqual(getNodeForAddress(parent.get_right2()),node)){
             //node pre ktoreho hladam brata je pravym synom pre druhy prvok v node jeho otca
-            if (node.get_parent().get_left2() != null){
-                return node.get_parent().get_left2();
+            if (getNodeForAddress(parent.get_left2()) != null){
+                return getNodeForAddress(parent.get_left2());
             }
         }
         return null;
@@ -395,16 +744,16 @@ public class BST23<T extends  Comparable<T>, V> {
         }
         if (nodeData.get_data1().compareTo(node.get_data1()) == 0){
             //data ktore mazem su nalavo
-            BST23Node temp = node.get_right1();
+            BST23Node temp = getNodeForAddress(node.get_right1());
             while (!isLeaf(temp)){
-                temp = temp.get_left1();
+                temp = getNodeForAddress(temp.get_left1());
             }
             return temp;
         }else if(nodeData.get_data1().compareTo(node.get_data2()) == 0){
             //data ktore mazem su napravo
-            BST23Node temp = node.get_right2();
+            BST23Node temp = getNodeForAddress(node.get_right2());
             while (!isLeaf(temp)){
-                temp = temp.get_left1();
+                temp = getNodeForAddress(temp.get_left1());
             }
             return temp;
         }
@@ -412,17 +761,90 @@ public class BST23<T extends  Comparable<T>, V> {
     }
 
     public boolean isLeaf(BST23Node node){
-        if (node.get_left1() == null && node.get_right1() == null && node.get_right2() == null){
+        if (getNodeForAddress(node.get_left1()) == null &&
+                getNodeForAddress(node.get_right1()) == null &&
+                getNodeForAddress(node.get_right2()) == null){
             return true;
         }
         return false;
     }
 
+    //vracia adresu kam sa ulozil
+    private int insertToFile(BST23Node pInsertedNode){
+        //naseekovanie na next address a vlozenie na dane miesto
+        try {
+            if (!invalidRecordsAdrIncr.isEmpty()){
+                int savedOnAddress = invalidRecordsAdrIncr.peek();
+                fileOfRecords.seek(savedOnAddress);
+                //nastavenie adresy kam sa ide ukladat
+                pInsertedNode.set_address(savedOnAddress);
+
+                //ziskanie pola bytov pre T zaznam
+                byte[] arrayOfDataBytes = pInsertedNode.ToByteArray();
+
+                fileOfRecords.write(arrayOfDataBytes);
+                invalidRecordsAdrDecr.remove(invalidRecordsAdrIncr.poll());
+                //savePriorityQueuestoFile();
+                return savedOnAddress;
+            }else {
+                fileOfRecords.seek(nextAddress);
+                //nastavenie adresy kam sa ide ukladat
+                pInsertedNode.set_address(nextAddress);
+
+                //ziskanie pola bytov pre T zaznam
+                byte[] arrayOfDataBytes = pInsertedNode.ToByteArray();
+
+                fileOfRecords.write(arrayOfDataBytes);
+                //zvysenie poctu len ked sa pridavalo na koniec
+                //tak isto aj pre dalsiu adresu
+                numberOfBlocks++;
+                nextAddress += pInsertedNode.getSize();
+                //ulozit upravene hlavickove subory
+                //saveHeader();
+                return nextAddress- pInsertedNode.getSize();
+            }
+        }catch (IOException exception){
+            return -1;
+        }
+    }
+
+    //metoda ktora uklada do suboru na urcene miesto(vyuzivane na update pre node)
+    private boolean insertToFileOnAddress(BST23Node pInsertedNode, int pAddress){
+        //naseekovanie na zadanu adresu a vlozenie na dane miesto
+        try {
+            fileOfRecords.seek(pAddress);
+            //nastavenie adresy kam sa ide ukladat
+            pInsertedNode.set_address(pAddress);
+
+            //ziskanie pola bytov pre T zaznam
+            byte[] arrayOfDataBytes = pInsertedNode.ToByteArray();
+
+            fileOfRecords.write(arrayOfDataBytes);
+
+            return true;
+        }catch (IOException exception){
+            return false;
+        }
+    }
+
+    private int getNextAddress(){
+        if (!invalidRecordsAdrIncr.isEmpty()){
+            return invalidRecordsAdrIncr.peek();
+        }else {
+            return nextAddress;
+        }
+    }
+
     //taktiez robene podla prednaskoveho pseudkokodu v kombinacii s poskytnutou strankou z elearningu
     public boolean insert(BST23Node pNode){
-        if (_root == null){
-            _root = pNode;
-            return true;
+        if (_root == UNDEFINED){
+            int address = insertToFile(pNode);
+            if (address == -1){
+                return false;
+            }else{
+                _root = address;
+                return true;
+            }
         }else if(find(pNode) == null) {
             BST23Node leaf = findLeafForInsert(pNode);
             if (leaf != null){
@@ -432,12 +854,16 @@ public class BST23<T extends  Comparable<T>, V> {
                     if (leaf.get_data1().compareTo(pNode.get_data1()) > 0){
                         leaf.set_data2(pNode.get_data1());
                         leaf.set_value2(pNode.get_value1());
+                        //ulozenie leafu do suboru
+                        insertToFileOnAddress(leaf, leaf.get_address());
                         return true;
                     }else if(leaf.get_data1().compareTo(pNode.get_data1()) < 0){
                         leaf.set_data2(leaf.get_data1());
                         leaf.set_value2(leaf.get_value1());
                         leaf.set_data1(pNode.get_data1());
                         leaf.set_value1(pNode.get_value1());
+                        //ulozenie leafu do suboru
+                        insertToFileOnAddress(leaf, leaf.get_address());
                         return true;
                     }
                 }else {
@@ -449,64 +875,92 @@ public class BST23<T extends  Comparable<T>, V> {
                         V maxValue = getMaxValue(leaf, pNode);
                         T middle = getMiddle(leaf, pNode);
                         V middleValue = getMiddleValue(leaf, pNode);
-                        if (leaf == _root){
+                        if (areNodesEqual(leaf, getNodeForAddress(_root))){
                             //ked je node korenom
                             BST23Node newRoot = new BST23Node(middle, middleValue);
                             BST23Node newRightSon = new BST23Node(max, maxValue);
+                            int newRootAddress = insertToFile(newRoot);
+                            int newRightSonAddress = getNextAddress();
 
-                            newRoot.set_left1(leaf);
-                            newRoot.set_right1(newRightSon);
+                            newRoot.set_left1(leaf.get_address());
+                            newRoot.set_right1(newRightSonAddress);
+                            //update noveho roota
+                            insertToFileOnAddress(newRoot,newRootAddress);
 
                             newRightSon.set_left1(leaf.get_left2());
                             newRightSon.set_right1(leaf.get_right2());
-                            newRightSon.set_parent(newRoot);
+                            newRightSon.set_parent(newRootAddress);
+                            //vlozenie noveho praveho syna
+                            insertToFile(newRightSon);
 
-                            leaf.set_parent(newRoot);
+                            //vlozenie
+
+                            leaf.set_parent(newRootAddress);
                             leaf.set_isThreeNode(false);
                             leaf.set_data2(null);
                             leaf.set_value2(null);
                             leaf.set_data1(min);
                             leaf.set_value1(minValue);
-                            if (leaf.get_right2() != null && leaf.get_left2() != null){
-                                leaf.get_right2().set_parent(newRightSon);
-                                leaf.get_left2().set_parent(newRightSon);
+                            BST23Node<T,V> right2Node = getNodeForAddress(leaf.get_right2());
+                            BST23Node<T,V> left2Node = getNodeForAddress(leaf.get_left2());
+                            if (right2Node != null && left2Node != null){
+                                right2Node.set_parent(newRightSonAddress);
+                                left2Node.set_parent(newRightSonAddress);
+                                //update hodnot tychto dvoch nodov v subore
+                                insertToFileOnAddress(right2Node, right2Node.get_address());
+                                insertToFileOnAddress(left2Node, left2Node.get_address());
                             }
-                            leaf.set_left2(null);
-                            leaf.set_right2(null);
+                            leaf.set_left2(UNDEFINED);
+                            leaf.set_right2(UNDEFINED);
+                            //update leaf nodu
+                            insertToFileOnAddress(leaf, leaf.get_address());
 
-                            _root = newRoot;
+                            _root = newRootAddress;
                             return true;
                         }else {
                             //node nie je korenom
-                            if (!leaf.get_parent().isThreeNode()){
+                            BST23Node<T,V> leafParent = getNodeForAddress(leaf.get_parent());
+                            if (!leafParent.isThreeNode()){
                                 //pokial je otec dvojvrchol
-                                if (leaf.get_parent().get_left1() == leaf){
+                                if (areNodesEqual(getNodeForAddress(leafParent.get_left1()),leaf)){
                                     //ak je lavy potomok otca
                                     BST23Node newNode = new BST23Node(max, maxValue);
                                     newNode.set_parent(leaf.get_parent());
                                     newNode.set_left1(leaf.get_left2());
                                     newNode.set_right1(leaf.get_right2());
-                                    if (leaf.get_left2() != null && leaf.get_right2() != null){
-                                        leaf.get_left2().set_parent(newNode);
-                                        leaf.get_right2().set_parent(newNode);
-                                    }
-                                    leaf.set_left2(null);
-                                    leaf.set_right2(null);
+                                    //vlozenie noveho nodu do suboru
+                                    int newNodeAddress = insertToFile(newNode);
 
-                                    leaf.get_parent().set_data2(leaf.get_parent().get_data1());
-                                    leaf.get_parent().set_value2(leaf.get_parent().get_value1());
-                                    leaf.get_parent().set_data1(middle);
-                                    leaf.get_parent().set_value1(middleValue);
-                                    leaf.get_parent().set_isThreeNode(true);
-                                    leaf.get_parent().set_right2(leaf.get_parent().get_right1());
-                                    leaf.get_parent().set_right1(newNode);
-                                    leaf.get_parent().set_left2(newNode);
+                                    BST23Node<T,V> leafLeft2Node = getNodeForAddress(leaf.get_left2());
+                                    BST23Node<T,V> leafRight2Node = getNodeForAddress(leaf.get_right2());
+                                    if (leafLeft2Node != null && leafRight2Node != null){
+                                        leafLeft2Node.set_parent(newNodeAddress);
+                                        leafRight2Node.set_parent(newNodeAddress);
+                                        //update hodnot dvoch nodov
+                                        insertToFileOnAddress(leafLeft2Node, leafLeft2Node.get_address());
+                                        insertToFileOnAddress(leafRight2Node, leafRight2Node.get_address());
+                                    }
+                                    leaf.set_left2(UNDEFINED);
+                                    leaf.set_right2(UNDEFINED);
+
+                                    leafParent.set_data2(leafParent.get_data1());
+                                    leafParent.set_value2(leafParent.get_value1());
+                                    leafParent.set_data1(middle);
+                                    leafParent.set_value1(middleValue);
+                                    leafParent.set_isThreeNode(true);
+                                    leafParent.set_right2(leafParent.get_right1());
+                                    leafParent.set_right1(newNodeAddress);
+                                    leafParent.set_left2(newNodeAddress);
+                                    //update parenta pre leaf
+                                    insertToFileOnAddress(leafParent, leafParent.get_address());
 
                                     leaf.set_data2(null);
                                     leaf.set_value2(null);
                                     leaf.set_data1(min);
                                     leaf.set_value1(minValue);
                                     leaf.set_isThreeNode(false);
+                                    //update leafu
+                                    insertToFileOnAddress(leaf,leaf.get_address());
                                     return true;
                                 }else{
                                     //ak je pravy potomok
@@ -514,78 +968,118 @@ public class BST23<T extends  Comparable<T>, V> {
                                     newNode.set_parent(leaf.get_parent());
                                     newNode.set_left1(leaf.get_left1());
                                     newNode.set_right1(leaf.get_right1());
-                                    if (leaf.get_left1() != null && leaf.get_right1() != null){
-                                        leaf.get_left1().set_parent(newNode);
-                                        leaf.get_right1().set_parent(newNode);
+
+                                    //vlozenie noveho nodu do suboru
+                                    int newNodeAddress = insertToFile(newNode);
+
+                                    BST23Node<T,V> leafLeft1Node = getNodeForAddress(leaf.get_left1());
+                                    BST23Node<T,V> leafRight1Node = getNodeForAddress(leaf.get_right1());
+                                    if (leafLeft1Node != null && leafRight1Node != null){
+                                        leafLeft1Node.set_parent(newNodeAddress);
+                                        leafRight1Node.set_parent(newNodeAddress);
+                                        //update hodnot dvoch nodov
+                                        insertToFileOnAddress(leafLeft1Node, leafLeft1Node.get_address());
+                                        insertToFileOnAddress(leafRight1Node, leafRight1Node.get_address());
                                     }
 
-                                    leaf.get_parent().set_data2(middle);
-                                    leaf.get_parent().set_value2(middleValue);
-                                    leaf.get_parent().set_isThreeNode(true);
-                                    leaf.get_parent().set_right2(leaf.get_parent().get_right1());
-                                    leaf.get_parent().set_right1(newNode);
-                                    leaf.get_parent().set_left2(newNode);
+                                    leafParent.set_data2(middle);
+                                    leafParent.set_value2(middleValue);
+                                    leafParent.set_isThreeNode(true);
+                                    leafParent.set_right2(leafParent.get_right1());
+                                    leafParent.set_right1(newNodeAddress);
+                                    leafParent.set_left2(newNodeAddress);
+                                    //update parenta pre leaf
+                                    insertToFileOnAddress(leafParent, leafParent.get_address());
+
                                     leaf.set_left1(leaf.get_left2());
                                     leaf.set_right1(leaf.get_right2());
-                                    leaf.set_left2(null);
-                                    leaf.set_right2(null);
-
+                                    leaf.set_left2(UNDEFINED);
+                                    leaf.set_right2(UNDEFINED);
                                     leaf.set_data2(null);
                                     leaf.set_value2(null);
                                     leaf.set_data1(max);
                                     leaf.set_value1(maxValue);
                                     leaf.set_isThreeNode(false);
+                                    //update leafu
+                                    insertToFileOnAddress(leaf,leaf.get_address());
                                     return true;
                                 }
                             }else {
                                 //pokial je otec trojvrchol(doslo by k preteceniu)
-                                if(leaf.get_parent().get_right2() == leaf){
+                                if(areNodesEqual(getNodeForAddress(leafParent.get_right2()),leaf)){
                                     //leaf je pravy potomok
                                     BST23Node newNode = new BST23Node(min, minValue);
                                     newNode.set_parent(leaf.get_parent());
                                     newNode.set_left1(leaf.get_left1());
                                     newNode.set_right1(leaf.get_right1());
-                                    if (leaf.get_left1() != null && leaf.get_right1() != null){
-                                        leaf.get_left1().set_parent(newNode);
-                                        leaf.get_right1().set_parent(newNode);
+
+                                    //vlozenie noveho nodu do suboru
+                                    int newNodeAddress = insertToFile(newNode);
+
+                                    BST23Node<T,V> leafLeft1Node = getNodeForAddress(leaf.get_left1());
+                                    BST23Node<T,V> leafRight1Node = getNodeForAddress(leaf.get_right1());
+                                    if (leafLeft1Node != null && leafRight1Node != null){
+                                        leafLeft1Node.set_parent(newNodeAddress);
+                                        leafRight1Node.set_parent(newNodeAddress);
+                                        //update hodnot dvoch nodov
+                                        insertToFileOnAddress(leafLeft1Node, leafLeft1Node.get_address());
+                                        insertToFileOnAddress(leafRight1Node, leafRight1Node.get_address());
                                     }
 
-                                    leaf.get_parent().set_left2(newNode);
+                                    leafParent.set_left2(newNodeAddress);
+                                    //update parenta pre leaf
+                                    insertToFileOnAddress(leafParent, leafParent.get_address());
+
                                     leaf.set_left1(leaf.get_left2());
                                     leaf.set_right1(leaf.get_right2());
-                                    leaf.set_left2(null);
-                                    leaf.set_right2(null);
+                                    leaf.set_left2(UNDEFINED);
+                                    leaf.set_right2(UNDEFINED);
 
                                     leaf.set_data2(null);
                                     leaf.set_value2(null);
                                     leaf.set_data1(max);
                                     leaf.set_value1(maxValue);
                                     leaf.set_isThreeNode(false);
+                                    //update leaf
+                                    insertToFileOnAddress(leaf,leaf.get_address());
 
-                                    leaf = leaf.get_parent();
+                                    leaf = getNodeForAddress(leaf.get_parent());
                                     pNode.set_data1(middle);
                                     pNode.set_value1(middleValue);
-                                }else if(leaf.get_parent().get_right1() == leaf){
+                                }else if(areNodesEqual(getNodeForAddress(leafParent.get_right1()), leaf)){
                                     //leaf je v strede
                                     BST23Node newNode = new BST23Node(max, maxValue);
                                     newNode.set_parent(leaf.get_parent());
                                     newNode.set_left1(leaf.get_left2());
                                     newNode.set_right1(leaf.get_right2());
-                                    if (leaf.get_left2() != null && leaf.get_right2() != null){
-                                        leaf.get_left2().set_parent(newNode);
-                                        leaf.get_right2().set_parent(newNode);
-                                    }
-                                    leaf.set_left2(null);
-                                    leaf.set_right2(null);
 
-                                    leaf.get_parent().set_left2(newNode);
+                                    //vlozenie noveho nodu do suboru
+                                    int newNodeAddress = insertToFile(newNode);
+
+                                    BST23Node<T,V> leafLeft2Node = getNodeForAddress(leaf.get_left2());
+                                    BST23Node<T,V> leafRight2Node = getNodeForAddress(leaf.get_right2());
+                                    if (leafLeft2Node != null && leafRight2Node != null){
+                                        leafLeft2Node.set_parent(newNodeAddress);
+                                        leafRight2Node.set_parent(newNodeAddress);
+                                        //update hodnot dvoch nodov
+                                        insertToFileOnAddress(leafLeft2Node, leafLeft2Node.get_address());
+                                        insertToFileOnAddress(leafRight2Node, leafRight2Node.get_address());
+                                    }
+                                    leafParent.set_left2(newNodeAddress);
+                                    //update parenta pre leaf
+                                    insertToFileOnAddress(leafParent, leafParent.get_address());
+
+                                    leaf.set_left2(UNDEFINED);
+                                    leaf.set_right2(UNDEFINED);
                                     leaf.set_data2(null);
                                     leaf.set_value2(null);
                                     leaf.set_data1(min);
                                     leaf.set_value1(minValue);
                                     leaf.set_isThreeNode(false);
+                                    //update leaf
+                                    insertToFileOnAddress(leaf,leaf.get_address());
 
-                                    leaf = leaf.get_parent();
+                                    leaf = getNodeForAddress(leaf.get_parent());
                                     pNode.set_data1(middle);
                                     pNode.set_value1(middleValue);
                                 }else {
@@ -594,21 +1088,34 @@ public class BST23<T extends  Comparable<T>, V> {
                                     newNode.set_parent(leaf.get_parent());
                                     newNode.set_left1(leaf.get_left2());
                                     newNode.set_right1(leaf.get_right2());
-                                    if (leaf.get_left2() != null && leaf.get_right2() != null){
-                                        leaf.get_left2().set_parent(newNode);
-                                        leaf.get_right2().set_parent(newNode);
-                                    }
-                                    leaf.set_left2(null);
-                                    leaf.set_right2(null);
 
-                                    leaf.get_parent().set_right1(newNode);
+                                    //vlozenie noveho nodu do suboru
+                                    int newNodeAddress = insertToFile(newNode);
+
+                                    BST23Node<T,V> leafLeft2Node = getNodeForAddress(leaf.get_left2());
+                                    BST23Node<T,V> leafRight2Node = getNodeForAddress(leaf.get_right2());
+                                    if (leafLeft2Node != null && leafRight2Node != null){
+                                        leafLeft2Node.set_parent(newNodeAddress);
+                                        leafRight2Node.set_parent(newNodeAddress);
+                                        //update hodnot dvoch nodov
+                                        insertToFileOnAddress(leafLeft2Node, leafLeft2Node.get_address());
+                                        insertToFileOnAddress(leafRight2Node, leafRight2Node.get_address());
+                                    }
+                                    leafParent.set_right1(newNodeAddress);
+                                    //update parenta pre leaf
+                                    insertToFileOnAddress(leafParent, leafParent.get_address());
+
+                                    leaf.set_left2(UNDEFINED);
+                                    leaf.set_right2(UNDEFINED);
                                     leaf.set_data2(null);
                                     leaf.set_value2(null);
                                     leaf.set_data1(min);
                                     leaf.set_value1(minValue);
                                     leaf.set_isThreeNode(false);
+                                    //update leaf
+                                    insertToFileOnAddress(leaf,leaf.get_address());
 
-                                    leaf = leaf.get_parent();
+                                    leaf = getNodeForAddress(leaf.get_parent());
                                     pNode.set_data1(middle);
                                     pNode.set_value1(middleValue);
                                 }
@@ -773,49 +1280,47 @@ public class BST23<T extends  Comparable<T>, V> {
     }
 
     private BST23Node findLeafForInsert(BST23Node pNode){
-        if (_root != null){
-            //if (_root.get_left() == null && _root.get_right() == null){
-            if (_root.get_left1() == null &&
-                    _root.get_right1() == null &&
-                    _root.get_right2() == null){
+        if (_root == UNDEFINED){
+            return null;
+        }
+        BST23Node loadedRoot = getNodeForAddress(_root);
+        if (loadedRoot != null){
+            if (getNodeForAddress(loadedRoot.get_left1()) == null &&
+                    getNodeForAddress(loadedRoot.get_right1()) == null &&
+                    getNodeForAddress(loadedRoot.get_right2()) == null){
                 //nema synov
                 //overovanie ci 2 vrchol alebo 3 sa bude robit az v insert
-                return _root;
+                return loadedRoot;
             }else {
                 BST23Node prev = null;
-                BST23Node temp = _root;
+                BST23Node temp = loadedRoot;
                 while (temp != null){
                     //if (temp.get_left() == null && temp.get_right() == null){
-                    if (temp.get_left1() == null &&
-                            temp.get_right1() == null &&
-                            temp.get_right2() == null){
+                    if (getNodeForAddress(temp.get_left1()) == null &&
+                            getNodeForAddress(temp.get_right1()) == null &&
+                            getNodeForAddress(temp.get_right2()) == null){
                         return temp;
                     }else {
                         if (temp.isThreeNode()){
                             //v pnode je zase data len data1
                             if(temp.get_data1().compareTo(pNode.get_data1()) < 0){
                                 prev = temp;
-                                //temp = prev.get_left();
-                                temp = prev.get_left1();
+                                temp = getNodeForAddress(prev.get_left1());
                             }else if(temp.get_data2().compareTo(pNode.get_data1()) > 0){
                                 prev = temp;
-                                //temp = prev.get_right();
-                                temp = prev.get_right2();
+                                temp = getNodeForAddress(prev.get_right2());
                             }else if ((temp.get_data1().compareTo(pNode.get_data1()) > 0) &&
                                     (temp.get_data2().compareTo(pNode.get_data1()) < 0)){
                                 prev = temp;
-                                //temp = prev.get_middle();
-                                temp = prev.get_right1();
+                                temp = getNodeForAddress(prev.get_right1());
                             }
                         }else {
                             if (temp.get_data1().compareTo(pNode.get_data1()) < 0){
                                 prev = temp;
-                                //temp = prev.get_left();
-                                temp = prev.get_left1();
+                                temp = getNodeForAddress(prev.get_left1());
                             }else if (temp.get_data1().compareTo(pNode.get_data1()) > 0){
                                 prev = temp;
-                                //temp = prev.get_right();
-                                temp = prev.get_right1();
+                                temp = getNodeForAddress(prev.get_right1());
                             }
                         }
                     }
@@ -828,46 +1333,63 @@ public class BST23<T extends  Comparable<T>, V> {
     //podla kodu na find pre klasicky BVS na internete
     public BST23Node find(BST23Node pNode){
         //pomocne vytvoreny pNode kty je posielany ako parameter bude mat hladany kluc v data1
-        if (_root == null ||
-                (pNode.get_data1().compareTo(_root.get_data1()) == 0) ||
-                ((_root.get_data2() != null) && (pNode.get_data1().compareTo(_root.get_data2()) == 0))){
-            return _root;
+        if (_root == UNDEFINED){
+            return null;
+        }
+        BST23Node loadedRoot = getNodeForAddress(_root);
+
+        if (loadedRoot == null ||
+                (pNode.get_data1().compareTo(loadedRoot.get_data1()) == 0) ||
+                ((loadedRoot.get_data2() != null) && (pNode.get_data1().compareTo(loadedRoot.get_data2()) == 0))){
+            if (loadedRoot.isValid()){
+                return loadedRoot;
+            }else {
+                return null;
+            }
         }else {
             BST23Node prev = null;
-            BST23Node temp = _root;
+            BST23Node temp = loadedRoot;
             while (temp != null){
                 if (temp.isThreeNode()){
                     if (temp.get_data1().compareTo(pNode.get_data1()) < 0){
                         //hladany kluc je mensi ako lavy vrchol(teda data1)
                         prev = temp;
-                        temp = prev.get_left1();
+                        temp = getNodeForAddress(prev.get_left1());
                     }else if (temp.get_data2().compareTo(pNode.get_data1()) > 0){
                         //hladany kluc je vacsi ako pravy vrchol
                         prev = temp;
-                        temp = prev.get_right2();
+                        temp = getNodeForAddress(prev.get_right2());
                     }else if ((temp.get_data1().compareTo(pNode.get_data1()) > 0) &&
                             (temp.get_data2().compareTo(pNode.get_data1()) < 0)){
                         //hladany kluc je medzi pravym a lavym klucom
                         prev = temp;
-                        temp = prev.get_right1();
+                        temp = getNodeForAddress(prev.get_right1());
                     }else if ((temp.get_data1().compareTo(pNode.get_data1()) == 0) ||
                             (temp.get_data2().compareTo(pNode.get_data1()) == 0)){
                         //hladany kluc je jeden z klucov dvoch vrcholov
-                        return temp;
+                        if (temp.isValid()){
+                            return temp;
+                        }else {
+                            return null;
+                        }
                     }
                 }else {
                     if (temp.get_data1().compareTo(pNode.get_data1()) > 0){
                         //ak pnode data1 je vacsie ako tempdata
                         prev = temp;
-                        temp = prev.get_right1();
+                        temp = getNodeForAddress(prev.get_right1());
                     }else if(temp.get_data1().compareTo(pNode.get_data1()) < 0){
                         //ak pnode data1 je mensie ako tempdata
                         prev = temp;
-                        temp = prev.get_left1();
+                        temp = getNodeForAddress(prev.get_left1());
                     }
                     if (temp != null){
                         if (temp.get_data1().compareTo(pNode.get_data1()) == 0){
-                            return temp;
+                            if (temp.isValid()){
+                                return temp;
+                            }else {
+                                return null;
+                            }
                         }
                     }
                 }
@@ -881,7 +1403,10 @@ public class BST23<T extends  Comparable<T>, V> {
         ArrayList<BST23Node> listOfFoundNodes = new ArrayList<>();
         BST23Node prev = null;
         T prevKey = null;
-        BST23Node temp = _root;
+        if (_root == UNDEFINED){
+            return listOfFoundNodes;
+        }
+        BST23Node temp = getNodeForAddress(_root);
         if (temp == null){
             return listOfFoundNodes;
         }
@@ -891,18 +1416,18 @@ public class BST23<T extends  Comparable<T>, V> {
                     //hladany kluc je mensi ako lavy vrchol(teda data1)
                     prev = temp;
                     prevKey = (T) prev.get_data1();
-                    temp = prev.get_left1();
+                    temp = getNodeForAddress(prev.get_left1());
                 }else if (temp.get_data2().compareTo(minNode.get_data1()) > 0){
                     //hladany kluc je vacsi ako pravy vrchol
                     prev = temp;
                     prevKey = (T) prev.get_data2();
-                    temp = prev.get_right2();
+                    temp = getNodeForAddress(prev.get_right2());
                 }else if ((temp.get_data1().compareTo(minNode.get_data1()) > 0) &&
                         (temp.get_data2().compareTo(minNode.get_data1()) < 0)){
                     //hladany kluc je medzi pravym a lavym klucom
                     prev = temp;
                     prevKey = (T) prev.get_data1();
-                    temp = prev.get_right1();
+                    temp = getNodeForAddress(prev.get_right1());
                 }else if(temp.get_data1().compareTo(minNode.get_data1()) == 0){
                     //najdeny minimalny node v datach 1
                     prev = temp;
@@ -919,12 +1444,12 @@ public class BST23<T extends  Comparable<T>, V> {
                     //ak min data1 je vacsie ako tempdata
                     prev = temp;
                     prevKey = (T) prev.get_data1();
-                    temp = prev.get_right1();
+                    temp = getNodeForAddress(prev.get_right1());
                 }else if(temp.get_data1().compareTo(minNode.get_data1()) < 0){
                     //ak min data1 je mensie ako tempdata
                     prev = temp;
                     prevKey = (T) prev.get_data1();
-                    temp = prev.get_left1();
+                    temp = getNodeForAddress(prev.get_left1());
                 }
                 if (temp != null){
                     if (temp.get_data1().compareTo(minNode.get_data1()) == 0){
@@ -987,10 +1512,10 @@ public class BST23<T extends  Comparable<T>, V> {
 
     private NodeAndKey findInOrderIntervalSearch(BST23Node node, T key){
         if (!node.isThreeNode()){
-            if (node.get_right1() != null){
-                BST23Node temp = node.get_right1();
+            if (getNodeForAddress(node.get_right1()) != null){
+                BST23Node temp = getNodeForAddress(node.get_right1());
                 while (!isLeaf(temp)){
-                    temp = temp.get_left1();
+                    temp = getNodeForAddress(temp.get_left1());
                 }
                 NodeAndKey nodeAndKey = new NodeAndKey(temp, temp.get_data1());
                 return nodeAndKey;
@@ -998,20 +1523,21 @@ public class BST23<T extends  Comparable<T>, V> {
                 //nema syna tak pojde po parentoch
                 BST23Node temp = node;
                 while (temp != null){
-                    if (temp.get_parent() != null){
-                        if (temp.get_parent().isThreeNode()){
-                            if (key.compareTo((T) temp.get_parent().get_data1()) > 0){
-                                NodeAndKey nodeAndKey = new NodeAndKey(temp.get_parent(), temp.get_parent().get_data1());
+                    BST23Node<T,V> parent = getNodeForAddress(temp.get_parent());
+                    if (parent != null){
+                        if (parent.isThreeNode()){
+                            if (key.compareTo((T) parent.get_data1()) > 0){
+                                NodeAndKey nodeAndKey = new NodeAndKey(parent, parent.get_data1());
                                 return nodeAndKey;
                             }
-                            if ((key.compareTo((T) temp.get_parent().get_data1()) < 0) &&
-                                    (key.compareTo((T) temp.get_parent().get_data2()) > 0)){
-                                NodeAndKey nodeAndKey = new NodeAndKey(temp.get_parent(), temp.get_parent().get_data2());
+                            if ((key.compareTo((T) parent.get_data1()) < 0) &&
+                                    (key.compareTo((T) parent.get_data2()) > 0)){
+                                NodeAndKey nodeAndKey = new NodeAndKey(parent, parent.get_data2());
                                 return nodeAndKey;
                             }
                         }else {
-                            if (key.compareTo((T) temp.get_parent().get_data1()) > 0){
-                                NodeAndKey nodeAndKey = new NodeAndKey(temp.get_parent(), temp.get_parent().get_data1());
+                            if (key.compareTo((T) parent.get_data1()) > 0){
+                                NodeAndKey nodeAndKey = new NodeAndKey(parent, parent.get_data1());
                                 return nodeAndKey;
                             }
                         }
@@ -1036,54 +1562,55 @@ public class BST23<T extends  Comparable<T>, V> {
                             }
                         }
                     }
-                    temp = temp.get_parent();
+                    temp = getNodeForAddress(temp.get_parent());
                 }
             }
         }else {
             //node je 3 vrchol
             if (key.compareTo((T) node.get_data1()) == 0){
-                if (node.get_right1() == null){
+                if (getNodeForAddress(node.get_right1()) == null){
                     //nema stredneho syna tak nema kam vliezt tak vracia data 2
                     NodeAndKey nodeAndKey = new NodeAndKey(node, node.get_data2());
                     return nodeAndKey;
                 }else {
                     //ma stredneho syna tak vlezie do neho
-                    BST23Node temp = node.get_right1();
+                    BST23Node temp = getNodeForAddress(node.get_right1());
                     while (!isLeaf(temp)){
                         //lez stale dolava az kym nenarazis na list
-                        temp = temp.get_left1();
+                        temp = getNodeForAddress(temp.get_left1());
                     }
                     NodeAndKey nodeAndKey = new NodeAndKey(temp, temp.get_data1());
                     return nodeAndKey;
                 }
             }else if(key.compareTo((T) node.get_data2()) == 0){
                 //hladame nasledovnika 2. kluca
-                if (node.get_right2() != null){
+                if (getNodeForAddress(node.get_right2()) != null){
                     //ma praveho syna tak vlezie do neho
-                    BST23Node temp = node.get_right2();
+                    BST23Node temp = getNodeForAddress(node.get_right2());
                     while (!isLeaf(temp)){
                         //lez stale dolava az kym nenarazis na list
-                        temp = temp.get_left1();
+                        temp = getNodeForAddress(temp.get_left1());
                     }
                     NodeAndKey nodeAndKey = new NodeAndKey(temp, temp.get_data1());
                     return nodeAndKey;
                 }else {
                     BST23Node temp = node;
                     while (temp != null){
-                        if (temp.get_parent() != null){
-                            if (temp.get_parent().isThreeNode()){
-                                if (key.compareTo((T) temp.get_parent().get_data1()) > 0){
-                                    NodeAndKey nodeAndKey = new NodeAndKey(temp.get_parent(), temp.get_parent().get_data1());
+                        BST23Node<T,V> parent = getNodeForAddress(temp.get_parent());
+                        if (parent != null){
+                            if (parent.isThreeNode()){
+                                if (key.compareTo((T) parent.get_data1()) > 0){
+                                    NodeAndKey nodeAndKey = new NodeAndKey(parent, parent.get_data1());
                                     return nodeAndKey;
                                 }
-                                if ((key.compareTo((T) temp.get_parent().get_data1()) < 0) &&
-                                        (key.compareTo((T) temp.get_parent().get_data2()) > 0)){
-                                    NodeAndKey nodeAndKey = new NodeAndKey(temp.get_parent(), temp.get_parent().get_data2());
+                                if ((key.compareTo((T) parent.get_data1()) < 0) &&
+                                        (key.compareTo((T) parent.get_data2()) > 0)){
+                                    NodeAndKey nodeAndKey = new NodeAndKey(parent, parent.get_data2());
                                     return nodeAndKey;
                                 }
                             }else {
-                                if (key.compareTo((T) temp.get_parent().get_data1()) > 0){
-                                    NodeAndKey nodeAndKey = new NodeAndKey(temp.get_parent(), temp.get_parent().get_data1());
+                                if (key.compareTo((T) parent.get_data1()) > 0){
+                                    NodeAndKey nodeAndKey = new NodeAndKey(parent, parent.get_data1());
                                     return nodeAndKey;
                                 }
                             }
@@ -1108,7 +1635,7 @@ public class BST23<T extends  Comparable<T>, V> {
                                 }
                             }
                         }
-                        temp = temp.get_parent();
+                        temp = getNodeForAddress(temp.get_parent());
                     }
                 }
             }
@@ -1118,12 +1645,15 @@ public class BST23<T extends  Comparable<T>, V> {
 
     public ArrayList<BST23Node> inOrder(){
         ArrayList<BST23Node> listOfFoundNodes = new ArrayList<>();
-        BST23Node temp = _root;
-        if (_root == null){
+        if (_root == UNDEFINED){
+            return listOfFoundNodes;
+        }
+        BST23Node temp = getNodeForAddress(_root);
+        if (temp == null){
             return listOfFoundNodes;
         }
         while (!isLeaf(temp)){
-            temp = temp.get_left1();
+            temp = getNodeForAddress(temp.get_left1());
         }
         BST23Node newNode = new BST23Node(temp.get_data1(), temp.get_value1());
         listOfFoundNodes.add(newNode);
@@ -1163,12 +1693,15 @@ public class BST23<T extends  Comparable<T>, V> {
     }
 
     public NodeWithKey getFirst(){
-        BST23Node temp = _root;
-        if (_root == null){
+        if (_root == UNDEFINED){
+            return null;
+        }
+        BST23Node temp = getNodeForAddress(_root);
+        if (temp == null){
             return null;
         }
         while (!isLeaf(temp)){
-            temp = temp.get_left1();
+            temp = getNodeForAddress(temp.get_left1());
         }
         return new NodeWithKey(temp, temp.get_data1());
     }
@@ -1192,11 +1725,42 @@ public class BST23<T extends  Comparable<T>, V> {
     }
 
     public BST23Node<T,V> get_root() {
-        return _root;
+        if (_root == UNDEFINED){
+            return null;
+        }
+        BST23Node loadedRoot = getNodeForAddress(_root);
+        return loadedRoot;
+    }
+
+    public ArrayList<BST23Node> getAllNodesFromFile(){
+        ArrayList<BST23Node> listOfNodes = new ArrayList<>();
+        if (_root == UNDEFINED){
+            return listOfNodes;
+        }else {
+            int next = HEADER_SIZE;
+            while (next < nextAddress){
+                BST23Node node = new BST23Node(classTypeKey, classTypeValue);
+                //nacitanie pola bytov zo suboru
+                byte[] arrayOfDataBytes = new byte[node.getSize()];
+                try {
+                    fileOfRecords.seek(next);
+                    fileOfRecords.read(arrayOfDataBytes);
+                }catch (IOException exception){
+                    return null;
+                }
+                //nacitanie hodnot pre node z pola bytov
+                node.FromByteArray(arrayOfDataBytes);
+                listOfNodes.add(node);
+                next += node.getSize();
+            }
+            return listOfNodes;
+        }
     }
 }
 
-class NodeAndKey<T extends  Comparable<T>, V>{
+
+
+class NodeAndKey<T extends  Comparable<T> & IData, V extends IData>{
     private BST23Node<T,V> node;
     private T key;
 
