@@ -2,8 +2,8 @@ package Models;
 
 import Structure.BST23Node;
 
-public class DistrictSickCountData extends BST23Node<DistrictSickCountKey, District> {
-    public DistrictSickCountData(DistrictSickCountKey key, District dataValue){
-        super(key,dataValue);
+public class DistrictSickCountData extends BST23Node<DistrictSickCountKey, Address> {
+    public DistrictSickCountData(DistrictSickCountKey key, Address address){
+        super(key,address);
     }
 }

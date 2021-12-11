@@ -4,44 +4,25 @@ import Structure.IData;
 
 import java.io.*;
 
-public class WorkplaceKey implements Comparable<WorkplaceKey>, IData<WorkplaceKey> {
+public class Address implements IData<Address> {
     private static final int UNDEFINED = -1;
 
-    private int workplaceId;
+    private int addressInUnsortedFile;
     private boolean isValid;
 
-    public WorkplaceKey(int workplaceId) {
-        this.workplaceId = workplaceId;
+    public Address(int pAddress){
+        addressInUnsortedFile = pAddress;
         isValid = true;
     }
 
-    public WorkplaceKey(){
-        workplaceId = UNDEFINED;
+    public Address(){
+        addressInUnsortedFile = UNDEFINED;
         isValid = false;
     }
 
-    public int getWorkplaceId() {
-        return workplaceId;
-    }
-
-    public void setWorkplaceId(int workplaceId) {
-        this.workplaceId = workplaceId;
-    }
-
     @Override
-    public int compareTo(WorkplaceKey o) {
-        if (workplaceId < o.workplaceId){
-            return 1;
-        }else if (workplaceId > o.workplaceId ){
-            return -1;
-        }else {
-            return 0;
-        }
-    }
-
-    @Override
-    public WorkplaceKey createClass() {
-        return new WorkplaceKey();
+    public Address createClass() {
+        return new Address();
     }
 
     @Override
@@ -50,7 +31,7 @@ public class WorkplaceKey implements Comparable<WorkplaceKey>, IData<WorkplaceKe
         DataOutputStream hlpOutStream = new DataOutputStream(hlpByteArrayOutputStream);
 
         try{
-            hlpOutStream.writeInt(workplaceId);
+            hlpOutStream.writeInt(addressInUnsortedFile);
             hlpOutStream.writeBoolean(isValid);
             return hlpByteArrayOutputStream.toByteArray();
         }catch (IOException e){
@@ -64,7 +45,7 @@ public class WorkplaceKey implements Comparable<WorkplaceKey>, IData<WorkplaceKe
         DataInputStream hlpInStream = new DataInputStream(hlpByteArrayInputStream);
 
         try {
-            workplaceId = hlpInStream.readInt();
+            addressInUnsortedFile = hlpInStream.readInt();
             isValid = hlpInStream.readBoolean();
         } catch (IOException e) {
             throw new IllegalStateException("Error during conversion from byte array.");
@@ -84,5 +65,13 @@ public class WorkplaceKey implements Comparable<WorkplaceKey>, IData<WorkplaceKe
     @Override
     public void setValid(boolean pValid) {
         isValid = pValid;
+    }
+
+    public int getAddressInUnsortedFile() {
+        return addressInUnsortedFile;
+    }
+
+    public void setAddressInUnsortedFile(int addressInUnsortedFile) {
+        this.addressInUnsortedFile = addressInUnsortedFile;
     }
 }

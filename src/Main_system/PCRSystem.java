@@ -33,6 +33,7 @@ public class PCRSystem {
                 pNumberOfTests);
     }
 
+    //TODOTest sa vlozi do unsorted filu a do ostatnych stromov vlozi len adresu
     public ResponseAndPCRTestId insertPCRTest(String personIdNumber,
                                               int yearOfTest,
                                               int monthOfTest,

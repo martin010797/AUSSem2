@@ -1,14 +1,27 @@
 package Models;
 
+import Structure.IData;
+
+import java.io.*;
 import java.util.Date;
 
-public class PCRKeyDistrict implements Comparable<PCRKeyDistrict>{
+public class PCRKeyDistrict implements Comparable<PCRKeyDistrict>, IData<PCRKeyDistrict> {
+    private static final int UNDEFINED = -1;
+
     private boolean positivity;
     private Date date;
+    private boolean isValid;
 
     public PCRKeyDistrict(boolean positivity, Date date) {
         this.positivity = positivity;
         this.date = date;
+        isValid = true;
+    }
+
+    public PCRKeyDistrict(){
+        positivity = false;
+        date = null;
+        isValid = false;
     }
 
     public boolean isPositivity() {
@@ -41,5 +54,84 @@ public class PCRKeyDistrict implements Comparable<PCRKeyDistrict>{
         }else {
             return 0;
         }
+    }
+
+    @Override
+    public PCRKeyDistrict createClass() {
+        return new PCRKeyDistrict();
+    }
+
+    @Override
+    public byte[] ToByteArray() {
+        ByteArrayOutputStream hlpByteArrayOutputStream= new ByteArrayOutputStream();
+        DataOutputStream hlpOutStream = new DataOutputStream(hlpByteArrayOutputStream);
+
+        try{
+            hlpOutStream.writeBoolean(positivity);
+            //den, mesiac, rok, hodina, minuta, sekunda
+            if (date != null) {
+                hlpOutStream.writeInt(date.getDate());
+                hlpOutStream.writeInt(date.getMonth());
+                hlpOutStream.writeInt(date.getYear());
+                hlpOutStream.writeInt(date.getHours());
+                hlpOutStream.writeInt(date.getMinutes());
+                hlpOutStream.writeInt(date.getSeconds());
+            }else {
+                hlpOutStream.writeInt(UNDEFINED);
+                hlpOutStream.writeInt(UNDEFINED);
+                hlpOutStream.writeInt(UNDEFINED);
+                hlpOutStream.writeInt(UNDEFINED);
+                hlpOutStream.writeInt(UNDEFINED);
+                hlpOutStream.writeInt(UNDEFINED);
+            }
+            hlpOutStream.writeBoolean(isValid);
+            return hlpByteArrayOutputStream.toByteArray();
+        }catch (IOException e){
+            throw new IllegalStateException("Error during conversion to byte array.");
+        }
+    }
+
+    @Override
+    public void FromByteArray(byte[] pArray) {
+        ByteArrayInputStream hlpByteArrayInputStream = new ByteArrayInputStream(pArray);
+        DataInputStream hlpInStream = new DataInputStream(hlpByteArrayInputStream);
+
+        try {
+            positivity = hlpInStream.readBoolean();
+            int day = hlpInStream.readInt();
+            int month = hlpInStream.readInt();
+            int year = hlpInStream.readInt();
+            int hour = hlpInStream.readInt();
+            int minute = hlpInStream.readInt();
+            int seconds = hlpInStream.readInt();
+            if (day == UNDEFINED &&
+                    month == UNDEFINED &&
+                    year == UNDEFINED &&
+                    hour == UNDEFINED &&
+                    minute == UNDEFINED &&
+                    seconds == UNDEFINED){
+                date = null;
+            }else {
+                date = new Date(year,month, day, hour, minute, seconds);
+            }
+            isValid = hlpInStream.readBoolean();
+        } catch (IOException e) {
+            throw new IllegalStateException("Error during conversion from byte array.");
+        }
+    }
+
+    @Override
+    public int getSize() {
+        return ((6*Integer.BYTES)+2);
+    }
+
+    @Override
+    public boolean isValid() {
+        return isValid;
+    }
+
+    @Override
+    public void setValid(boolean pValid) {
+        isValid = pValid;
     }
 }
