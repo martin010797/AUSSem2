@@ -67,6 +67,23 @@ public class UnsortedFile<T extends IData> {
         }
     }
 
+    //metoda ktora uklada do suboru na urcene miesto(vyuzivane na update)
+    public boolean updateOnAddress(T item, int pAddress){
+        //naseekovanie na zadanu adresu a vlozenie na dane miesto
+        try {
+            fileOfRecords.seek(pAddress);
+
+            //ziskanie pola bytov pre T zaznam
+            byte[] arrayOfDataBytes = item.ToByteArray();
+
+            fileOfRecords.write(arrayOfDataBytes);
+
+            return true;
+        }catch (IOException exception){
+            return false;
+        }
+    }
+
     public T find(int pAddressOfRecord){
         //vytvorenie instancie triedy T
         T data;

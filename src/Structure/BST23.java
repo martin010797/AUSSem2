@@ -1331,7 +1331,7 @@ public class BST23<T extends  Comparable<T> & IData, V extends IData> {
     }
 
     //podla kodu na find pre klasicky BVS na internete
-    public BST23Node find(BST23Node pNode){
+    public BST23Node<T,V> find(BST23Node pNode){
         //pomocne vytvoreny pNode kty je posielany ako parameter bude mat hladany kluc v data1
         if (_root == UNDEFINED){
             return null;

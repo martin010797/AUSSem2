@@ -4,6 +4,8 @@ import Models.*;
 import Structure.BST23;
 import Structure.BST23Node;
 import Structure.NodeWithKey;
+import Structure.UnsortedFile;
+import Tests.TestingData;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -12,12 +14,41 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class PCRSystem {
-    private BST23<PersonKey, Person> treeOfPeople = new BST23<>();
-    private BST23<DistrictKey, District> treeOfDistricts = new BST23<>();
-    private BST23<RegionKey, Region> treeOfRegions = new BST23<>();
-    private BST23<WorkplaceKey, Workplace> treeOfWorkplace = new BST23<>();
+    private BST23<PersonKey, Address> treeOfPeople;
+    private BST23<DistrictKey, Address> treeOfDistricts;
+    private BST23<RegionKey, Address> treeOfRegions;
+    private BST23<WorkplaceKey, Address> treeOfWorkplace;
+
+    //unserted files kvoli vyhnutiu sa duplicite
+    UnsortedFile<PCR> pcrUnsortedFile;
+    UnsortedFile<District> districtUnsortedFile;
+    UnsortedFile<Region> regionUnsortedFile;
+    UnsortedFile<Person> personUnsortedFile;
+    UnsortedFile<Workplace> workplaceUnsortedFile;
 
     public PCRSystem() {
+        treeOfPeople = new BST23<PersonKey, Address>(
+                "pcrSystemFiles/peopleAddress",
+                PersonKey.class,
+                Address.class);
+        treeOfDistricts = new BST23<DistrictKey, Address>(
+                "pcrSystemFiles/districtAddress",
+                DistrictKey.class,
+                Address.class);
+        treeOfRegions = new BST23<RegionKey, Address>(
+                "pcrSystemFiles/regionAddress",
+                RegionKey.class,
+                Address.class);
+        treeOfWorkplace = new BST23<WorkplaceKey, Address>(
+                "pcrSystemFiles/workplaceAddress",
+                WorkplaceKey.class,
+                Address.class);
+
+        pcrUnsortedFile = new UnsortedFile<>("pcrSystemFiles/pcrUnsorted", PCR.class);
+        districtUnsortedFile = new UnsortedFile<>("pcrSystemFiles/districtUnsorted", District.class);
+        regionUnsortedFile = new UnsortedFile<>("pcrSystemFiles/regionUnsorted", Region.class);
+        personUnsortedFile = new UnsortedFile<>("pcrSystemFiles/personUnsorted", Person.class);
+        workplaceUnsortedFile = new UnsortedFile<>("pcrSystemFiles/workplaceUnsorted", Workplace.class);
     }
 
     public PCRSystem(int pNumberOfRegions,
@@ -31,9 +62,31 @@ public class PCRSystem {
                 pNumberOfWorkplaces,
                 pNumberOfPeople,
                 pNumberOfTests);
+        treeOfPeople = new BST23<PersonKey, Address>(
+                "pcrSystemFiles/peopleAddress",
+                PersonKey.class,
+                Address.class);
+        treeOfDistricts = new BST23<DistrictKey, Address>(
+                "pcrSystemFiles/districtAddress",
+                DistrictKey.class,
+                Address.class);
+        treeOfRegions = new BST23<RegionKey, Address>(
+                "pcrSystemFiles/regionAddress",
+                RegionKey.class,
+                Address.class);
+        treeOfWorkplace = new BST23<WorkplaceKey, Address>(
+                "pcrSystemFiles/workplaceAddress",
+                WorkplaceKey.class,
+                Address.class);
+
+        pcrUnsortedFile = new UnsortedFile<>("pcrSystemFiles/pcrUnsorted", PCR.class);
+        districtUnsortedFile = new UnsortedFile<>("pcrSystemFiles/districtUnsorted", District.class);
+        regionUnsortedFile = new UnsortedFile<>("pcrSystemFiles/regionUnsorted", Region.class);
+        personUnsortedFile = new UnsortedFile<>("pcrSystemFiles/personUnsorted", Person.class);
+        workplaceUnsortedFile = new UnsortedFile<>("pcrSystemFiles/workplaceUnsorted", Workplace.class);
     }
 
-    //TODOTest sa vlozi do unsorted filu a do ostatnych stromov vlozi len adresu
+    //TODO Test sa vlozi do unsorted filu a do ostatnych stromov vlozi len adresu
     public ResponseAndPCRTestId insertPCRTest(String personIdNumber,
                                               int yearOfTest,
                                               int monthOfTest,
@@ -50,17 +103,26 @@ public class PCRSystem {
         //overuje sa ci osoba pre dany system existuje. ak nie tak hod chybu
         PersonKey pKey = new PersonKey(personIdNumber);
         PersonData pData = new PersonData(pKey,null);
-        BST23Node testedPersonNode = treeOfPeople.find(pData);
+        BST23Node<PersonKey,Address> testedPersonNode = treeOfPeople.find(pData);
         if (testedPersonNode == null){
             //osoba sa v systeme nenachadza
             return new ResponseAndPCRTestId(ResponseType.PERSON_DOESNT_EXIST,null);
         }else {
             //vytvorenie testu
             Person person;
+            int personAddress;
+            District district;
+            int districtAddress = -1;
+            Region region;
+            int regionAddress = -1;
+            Workplace workplace;
+            int workplaceAddress = -1;
             if (((PersonKey) testedPersonNode.get_data1()).getIdNumber().equals(personIdNumber)){
-                person = ((Person) testedPersonNode.get_value1());
+                personAddress = testedPersonNode.get_value1().getAddressInUnsortedFile();
+                person = personUnsortedFile.find(personAddress);
             }else{
-                person = ((Person) testedPersonNode.get_value2());
+                personAddress = testedPersonNode.get_value2().getAddressInUnsortedFile();
+                person = personUnsortedFile.find(personAddress);
             }
             PCR testValue = new PCR(
                     yearOfTest,
@@ -75,56 +137,73 @@ public class PCRSystem {
                     regionId,
                     result,
                     description,
-                    person,
+                    personAddress,
                     pTestId);
+            //vlozenie testu do unsorted file
+            int pcrAddress = pcrUnsortedFile.insert(testValue);
+            Address pcrAddressRecord = new Address(pcrAddress);
             PCRKey testKey = new PCRKey(testValue.getPCRId());
-            PCRData personTestData = new PCRData(testKey, testValue);
+            PCRData personTestData = new PCRData(testKey, pcrAddressRecord);
             //vlozenie testu do stromu testov v osobe
             if(!person.insertPCRForPerson(personTestData)){
+                //osoba neexistuje tak sa vymaze nevlozeny pcr test z unsorted file
+                pcrUnsortedFile.delete(pcrAddress);
                 return new ResponseAndPCRTestId(ResponseType.PCR_WITH_ID_EXISTS,testValue.getPCRId().toString());
             }
             //vlozenie testu do stromov v osobe podla datumu
             PCRKeyDate pKeyDate = new PCRKeyDate(testValue.getDateAndTimeOfTest());
-            PCRWorkplaceData pDateData = new PCRWorkplaceData(pKeyDate,testValue);
+            PCRWorkplaceData pDateData = new PCRWorkplaceData(pKeyDate,pcrAddressRecord);
             if (!person.insertPCRByDateForPerson(pDateData)){
                 //nepodarilo sa vlozit tak vymaz z testov pre osobu podla id testu
-                PCRData deletedPersonTestData = new PCRData(testKey, testValue);
+                PCRData deletedPersonTestData = new PCRData(testKey, pcrAddressRecord);
                 person.deletePCRTest(deletedPersonTestData);
+                //vymaze sa aj test z unsorted file
+                pcrUnsortedFile.delete(pcrAddress);
                 return new ResponseAndPCRTestId(ResponseType.PCR_EXISTS_FOR_THAT_TIME, testValue.getPCRId().toString());
-            }
+            }//TODO nezabundut na konci vkladania(ak bude uspesne updatnut vsetky upravovane recordy)
             //pre dany okres vlozi test
             DistrictKey dKey = new DistrictKey(districtId);
             DistrictData dData = new DistrictData(dKey,null);
-            BST23Node testedDistrictNode = treeOfDistricts.find(dData);
+            BST23Node<DistrictKey,Address> testedDistrictNode = treeOfDistricts.find(dData);
             if(testedDistrictNode == null){
                 //vymaze sa test z osoby lebo sa nemoze vkladat do systemu pokial neexistuje okres
-                PCRData deletedPersonTestData = new PCRData(testKey, testValue);
+                PCRData deletedPersonTestData = new PCRData(testKey, pcrAddressRecord);
                 person.deletePCRTest(deletedPersonTestData);
                 PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
-                PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,testValue);
+                PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,pcrAddressRecord);
                 person.deletePCRTestByDate(deletedPersonDateTestData);
+                //vymaze sa aj test z unsorted file
+                pcrUnsortedFile.delete(pcrAddress);
                 return new ResponseAndPCRTestId(ResponseType.DISTRICT_DOESNT_EXIST,testValue.getPCRId().toString());
             }else {
                 PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
-                PCRDistrictPositiveData districtTestData = new PCRDistrictPositiveData(districtPCRKey, testValue);
+                PCRDistrictPositiveData districtTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
                 if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId){
-                    testValue.setDistrict(((District) testedDistrictNode.get_value1()));
-                    if(!((District) testedDistrictNode.get_value1()).insertTest(districtTestData)){
+                    testValue.setDistrict(testedDistrictNode.get_value1().getAddressInUnsortedFile());
+                    districtAddress = testedDistrictNode.get_value1().getAddressInUnsortedFile();
+                    district = districtUnsortedFile.find(districtAddress);
+                    if(!district.insertTest(districtTestData)){
                         PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
-                        PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,testValue);
+                        PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,pcrAddressRecord);
                         person.deletePCRTestByDate(deletedPersonDateTestData);
-                        PCRData deletedPersonTestData = new PCRData(testKey, testValue);
+                        PCRData deletedPersonTestData = new PCRData(testKey, pcrAddressRecord);
                         person.deletePCRTest(deletedPersonTestData);
+                        //vymaze sa aj test z unsorted file
+                        pcrUnsortedFile.delete(pcrAddress);
                         return new ResponseAndPCRTestId(ResponseType.PCR_WITH_ID_EXISTS,testValue.getPCRId().toString());
                     }
                 }else {
-                    testValue.setDistrict(((District) testedDistrictNode.get_value2()));
-                    if (!((District) testedDistrictNode.get_value2()).insertTest(districtTestData)){
+                    testValue.setDistrict(testedDistrictNode.get_value2().getAddressInUnsortedFile());
+                    districtAddress = testedDistrictNode.get_value2().getAddressInUnsortedFile();
+                    district = districtUnsortedFile.find(districtAddress);
+                    if (!district.insertTest(districtTestData)){
                         PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
-                        PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,testValue);
+                        PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,pcrAddressRecord);
                         person.deletePCRTestByDate(deletedPersonDateTestData);
-                        PCRData deletedPersonTestData = new PCRData(testKey, testValue);
+                        PCRData deletedPersonTestData = new PCRData(testKey, pcrAddressRecord);
                         person.deletePCRTest(deletedPersonTestData);
+                        //vymaze sa aj test z unsorted file
+                        pcrUnsortedFile.delete(pcrAddress);
                         return new ResponseAndPCRTestId(ResponseType.PCR_WITH_ID_EXISTS,testValue.getPCRId().toString());
                     }
                 }
@@ -132,64 +211,74 @@ public class PCRSystem {
             //pre dany kraj vlozi test
             RegionKey rKey = new RegionKey(regionId);
             RegionData rData = new RegionData(rKey,null);
-            BST23Node testedRegionNode = treeOfRegions.find(rData);
+            BST23Node<RegionKey,Address> testedRegionNode = treeOfRegions.find(rData);
             if(testedRegionNode == null){
                 PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
                 //mazania kvoli tomu aby neostali data ked sa nemoze vkladat
                 if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
-                    PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, testValue);
-                    ((District) testedDistrictNode.get_value1()).deletePCRTest(deletedDistrictTestData);
+                    PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
+                    district.deletePCRTest(deletedDistrictTestData);
                 }else {
-                    PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, testValue);
-                    ((District) testedDistrictNode.get_value2()).deletePCRTest(deletedDistrictTestData);
+                    PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
+                    district.deletePCRTest(deletedDistrictTestData);
                 }
                 PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
-                PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,testValue);
+                PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,pcrAddressRecord);
                 person.deletePCRTestByDate(deletedPersonDateTestData);
-                PCRData deletedPersonTestData = new PCRData(testKey, testValue);
+                PCRData deletedPersonTestData = new PCRData(testKey, pcrAddressRecord);
                 person.deletePCRTest(deletedPersonTestData);
+                //vymaze sa aj test z unsorted file
+                pcrUnsortedFile.delete(pcrAddress);
                 return new ResponseAndPCRTestId(ResponseType.REGION_DOESNT_EXIST, testValue.getPCRId().toString());
             }else {
                 PCRKeyRegion pcrKeyRegion = new PCRKeyRegion(testValue.isResult(),testValue.getDateAndTimeOfTest());
-                PCRRegionData regionTestData = new PCRRegionData(pcrKeyRegion,testValue);
+                PCRRegionData regionTestData = new PCRRegionData(pcrKeyRegion,pcrAddressRecord);
                 if (((RegionKey) testedRegionNode.get_data1()).getRegionId() == regionId){
-                    testValue.setRegion(((Region) testedRegionNode.get_value1()));
-                    if (!((Region) testedRegionNode.get_value1()).insertTest(regionTestData)){
+                    testValue.setRegion(testedRegionNode.get_value1().getAddressInUnsortedFile());
+                    regionAddress = testedRegionNode.get_value1().getAddressInUnsortedFile();
+                    region = regionUnsortedFile.find(regionAddress);
+                    if (!region.insertTest(regionTestData)){
                         PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
                         //mazania kvoli tomu aby neostali data ked sa nemoze vkladat
                         if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
-                            PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, testValue);
-                            ((District) testedDistrictNode.get_value1()).deletePCRTest(deletedDistrictTestData);
+                            PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
+                            district.deletePCRTest(deletedDistrictTestData);
                         }else {
-                            PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, testValue);
-                            ((District) testedDistrictNode.get_value2()).deletePCRTest(deletedDistrictTestData);
+                            PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
+                            district.deletePCRTest(deletedDistrictTestData);
                         }
                         PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
-                        PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,testValue);
+                        PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,pcrAddressRecord);
                         person.deletePCRTestByDate(deletedPersonDateTestData);
-                        PCRData deletedPersonTestData = new PCRData(testKey, testValue);
+                        PCRData deletedPersonTestData = new PCRData(testKey, pcrAddressRecord);
                         person.deletePCRTest(deletedPersonTestData);
+                        //vymaze sa aj test z unsorted file
+                        pcrUnsortedFile.delete(pcrAddress);
                         return new ResponseAndPCRTestId(
                                 ResponseType.PCR_WITH_ID_EXISTS,
                                 testValue.getPCRId().toString());
                     }
                 }else {
-                    testValue.setRegion(((Region) testedRegionNode.get_value2()));
-                    if (!((Region) testedRegionNode.get_value2()).insertTest(regionTestData)){
+                    testValue.setRegion(testedRegionNode.get_value2().getAddressInUnsortedFile());
+                    regionAddress = testedRegionNode.get_value2().getAddressInUnsortedFile();
+                    region = regionUnsortedFile.find(regionAddress);
+                    if (!region.insertTest(regionTestData)){
                         PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
                         //mazania kvoli tomu aby neostali data ked sa nemoze vkladat
                         if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
-                            PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, testValue);
-                            ((District) testedDistrictNode.get_value1()).deletePCRTest(deletedDistrictTestData);
+                            PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
+                            district.deletePCRTest(deletedDistrictTestData);
                         }else {
-                            PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, testValue);
-                            ((District) testedDistrictNode.get_value2()).deletePCRTest(deletedDistrictTestData);
+                            PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
+                            district.deletePCRTest(deletedDistrictTestData);
                         }
                         PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
-                        PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,testValue);
+                        PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,pcrAddressRecord);
                         person.deletePCRTestByDate(deletedPersonDateTestData);
-                        PCRData deletedPersonTestData = new PCRData(testKey, testValue);
+                        PCRData deletedPersonTestData = new PCRData(testKey, pcrAddressRecord);
                         person.deletePCRTest(deletedPersonTestData);
+                        //vymaze sa aj test z unsorted file
+                        pcrUnsortedFile.delete(pcrAddress);
                         return new ResponseAndPCRTestId(
                                 ResponseType.PCR_WITH_ID_EXISTS,
                                 testValue.getPCRId().toString());
@@ -199,104 +288,123 @@ public class PCRSystem {
             //pre dane pracovisko vlozi test
             WorkplaceKey wKey = new WorkplaceKey(workplaceId);
             WorkplaceData wData = new WorkplaceData(wKey,null);
-            BST23Node workplaceNode = treeOfWorkplace.find(wData);
+            BST23Node<WorkplaceKey,Address> workplaceNode = treeOfWorkplace.find(wData);
             if(workplaceNode == null){
                 PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
                 PCRKeyRegion regionPCRKey = new PCRKeyRegion(testValue.isResult(),testValue.getDateAndTimeOfTest());
                 //mazania kvoli tomu aby neostali data ked sa nemoze vkladat
                 if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
-                    PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, testValue);
-                    ((District) testedDistrictNode.get_value1()).deletePCRTest(deletedDistrictTestData);
+                    PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
+                    district.deletePCRTest(deletedDistrictTestData);
                 }else {
-                    PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, testValue);
-                    ((District) testedDistrictNode.get_value2()).deletePCRTest(deletedDistrictTestData);
+                    PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
+                    district.deletePCRTest(deletedDistrictTestData);
                 }
                 if (((RegionKey) testedRegionNode.get_data1()).getRegionId() == regionId){
-                    PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, testValue);
-                    ((Region) testedRegionNode.get_value1()).deletePCRTest(deletedRegionTestData);
+                    PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, pcrAddressRecord);
+                    region.deletePCRTest(deletedRegionTestData);
                 }else {
-                    PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, testValue);
-                    ((Region) testedRegionNode.get_value2()).deletePCRTest(deletedRegionTestData);
+                    PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, pcrAddressRecord);
+                    region.deletePCRTest(deletedRegionTestData);
                 }
                 PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
-                PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,testValue);
+                PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,pcrAddressRecord);
                 person.deletePCRTestByDate(deletedPersonDateTestData);
-                PCRData deletedPersonTestData = new PCRData(testKey, testValue);
+                PCRData deletedPersonTestData = new PCRData(testKey, pcrAddressRecord);
                 person.deletePCRTest(deletedPersonTestData);
+                //vymaze sa aj test z unsorted file
+                pcrUnsortedFile.delete(pcrAddress);
                 return new ResponseAndPCRTestId(
                         ResponseType.WORKPLACE_DOESNT_EXIST,
                         testValue.getPCRId().toString());
             }else {
                 PCRKeyDate testWorkplaceKey = new PCRKeyDate(testValue.getDateAndTimeOfTest());
-                PCRWorkplaceData workplaceTestData = new PCRWorkplaceData(testWorkplaceKey, testValue);
+                PCRWorkplaceData workplaceTestData = new PCRWorkplaceData(testWorkplaceKey, pcrAddressRecord);
                 if (((WorkplaceKey) workplaceNode.get_data1()).getWorkplaceId() == workplaceId){
-                    testValue.setWorkplace(((Workplace) workplaceNode.get_value1()));
-                    if (!((Workplace) workplaceNode.get_value1()).insertTest(workplaceTestData)){
+                    testValue.setWorkplace(workplaceNode.get_value1().getAddressInUnsortedFile());
+                    workplaceAddress = workplaceNode.get_value1().getAddressInUnsortedFile();
+                    workplace = workplaceUnsortedFile.find(workplaceAddress);
+                    if (!workplace.insertTest(workplaceTestData)){
                         PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
                         PCRKeyRegion regionPCRKey = new PCRKeyRegion(testValue.isResult(),testValue.getDateAndTimeOfTest());
                         //mazania kvoli tomu aby neostali data ked sa nemoze vkladat
                         if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
-                            PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, testValue);
-                            ((District) testedDistrictNode.get_value1()).deletePCRTest(deletedDistrictTestData);
+                            PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
+                            district.deletePCRTest(deletedDistrictTestData);
                         }else {
-                            PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, testValue);
-                            ((District) testedDistrictNode.get_value2()).deletePCRTest(deletedDistrictTestData);
+                            PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
+                            district.deletePCRTest(deletedDistrictTestData);
                         }
                         if (((RegionKey) testedRegionNode.get_data1()).getRegionId() == regionId){
-                            PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, testValue);
-                            ((Region) testedRegionNode.get_value1()).deletePCRTest(deletedRegionTestData);
+                            PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, pcrAddressRecord);
+                            region.deletePCRTest(deletedRegionTestData);
                         }else {
-                            PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, testValue);
-                            ((Region) testedRegionNode.get_value2()).deletePCRTest(deletedRegionTestData);
+                            PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, pcrAddressRecord);
+                            region.deletePCRTest(deletedRegionTestData);
                         }
                         PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
-                        PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,testValue);
+                        PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,pcrAddressRecord);
                         person.deletePCRTestByDate(deletedPersonDateTestData);
-                        PCRData deletedPersonTestData = new PCRData(testKey, testValue);
+                        PCRData deletedPersonTestData = new PCRData(testKey, pcrAddressRecord);
                         person.deletePCRTest(deletedPersonTestData);
+                        //vymaze sa aj test z unsorted file
+                        pcrUnsortedFile.delete(pcrAddress);
                         return new ResponseAndPCRTestId(
                                 ResponseType.PCR_EXISTS_FOR_THAT_TIME,
                                 testValue.getPCRId().toString());
                     }
                 }else {
-                    testValue.setWorkplace(((Workplace) workplaceNode.get_value2()));
-                    if (!((Workplace) workplaceNode.get_value2()).insertTest(workplaceTestData)){
+                    testValue.setWorkplace(workplaceNode.get_value2().getAddressInUnsortedFile());
+                    workplaceAddress = workplaceNode.get_value2().getAddressInUnsortedFile();
+                    workplace = workplaceUnsortedFile.find(workplaceAddress);
+                    if (!workplace.insertTest(workplaceTestData)){
                         PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
                         PCRKeyRegion regionPCRKey = new PCRKeyRegion(testValue.isResult(),testValue.getDateAndTimeOfTest());
                         //mazania kvoli tomu aby neostali data ked sa nemoze vkladat
                         if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
-                            PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, testValue);
-                            ((District) testedDistrictNode.get_value1()).deletePCRTest(deletedDistrictTestData);
+                            PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
+                            district.deletePCRTest(deletedDistrictTestData);
                         }else {
-                            PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, testValue);
-                            ((District) testedDistrictNode.get_value2()).deletePCRTest(deletedDistrictTestData);
+                            PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
+                            district.deletePCRTest(deletedDistrictTestData);
                         }
                         if (((RegionKey) testedRegionNode.get_data1()).getRegionId() == regionId){
-                            PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, testValue);
-                            ((Region) testedRegionNode.get_value1()).deletePCRTest(deletedRegionTestData);
+                            PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, pcrAddressRecord);
+                            region.deletePCRTest(deletedRegionTestData);
                         }else {
-                            PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, testValue);
-                            ((Region) testedRegionNode.get_value2()).deletePCRTest(deletedRegionTestData);
+                            PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, pcrAddressRecord);
+                            region.deletePCRTest(deletedRegionTestData);
                         }
                         PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
-                        PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,testValue);
+                        PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,pcrAddressRecord);
                         person.deletePCRTestByDate(deletedPersonDateTestData);
-                        PCRData deletedPersonTestData = new PCRData(testKey, testValue);
+                        PCRData deletedPersonTestData = new PCRData(testKey, pcrAddressRecord);
                         person.deletePCRTest(deletedPersonTestData);
+                        //vymaze sa aj test z unsorted file
+                        pcrUnsortedFile.delete(pcrAddress);
                         return new ResponseAndPCRTestId(
                                 ResponseType.PCR_EXISTS_FOR_THAT_TIME,
                                 testValue.getPCRId().toString());
                     }
                 }
             }
+            pcrUnsortedFile.updateOnAddress(testValue,pcrAddress);
             return new ResponseAndPCRTestId(ResponseType.SUCCESS,testValue.getPCRId().toString());
         }
     }
 
     public boolean insertPerson(String name, String surname, int year, int month, int day, String idNumber){
+        //vlozenie osoby do unsorted filu
+        int addressOfPerson = personUnsortedFile.insert(new Person(name,surname,year,month,day,idNumber));
+        if (addressOfPerson == -1){
+            return false;
+        }
+        //ak sa podarilo vlozit do unsorted filu tak do stromu uklada adresu na neho
         PersonKey pKey = new PersonKey(idNumber);
-        Person pValue = new Person(name,surname,year,month,day,idNumber);
-        PersonData pData = new PersonData(pKey,pValue);
+        Address address = new Address(addressOfPerson);
+        //Person pValue = new Person(name,surname,year,month,day,idNumber);
+        //PersonData pData = new PersonData(pKey,pValue);
+        PersonData pData = new PersonData(pKey,address);
         return treeOfPeople.insert(pData);
     }
 
@@ -371,6 +479,7 @@ public class PCRSystem {
         if (firstNode == null){
             return ResponseType.PERSON_DOESNT_EXIST;
         }else {
+            //TODO upravit lebo tu nevraciu person ale iba jeho adresu
             testResult = ((Person) firstNode.getNode().get_value1()).getTreeOfTests().find(tData);
         }
         NodeWithKey nextNode = null;
