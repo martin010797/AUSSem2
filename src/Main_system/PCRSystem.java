@@ -86,7 +86,6 @@ public class PCRSystem {
         workplaceUnsortedFile = new UnsortedFile<>("pcrSystemFiles/workplaceUnsorted", Workplace.class);
     }
 
-    //TODO Test sa vlozi do unsorted filu a do ostatnych stromov vlozi len adresu
     public ResponseAndPCRTestId insertPCRTest(String personIdNumber,
                                               int yearOfTest,
                                               int monthOfTest,
@@ -150,6 +149,7 @@ public class PCRSystem {
                 pcrUnsortedFile.delete(pcrAddress);
                 return new ResponseAndPCRTestId(ResponseType.PCR_WITH_ID_EXISTS,testValue.getPCRId().toString());
             }
+            person.getTreeOfTests().endWorkWithFile();
             //vlozenie testu do stromov v osobe podla datumu
             PCRKeyDate pKeyDate = new PCRKeyDate(testValue.getDateAndTimeOfTest());
             PCRWorkplaceData pDateData = new PCRWorkplaceData(pKeyDate,pcrAddressRecord);
@@ -157,10 +157,12 @@ public class PCRSystem {
                 //nepodarilo sa vlozit tak vymaz z testov pre osobu podla id testu
                 PCRData deletedPersonTestData = new PCRData(testKey, pcrAddressRecord);
                 person.deletePCRTest(deletedPersonTestData);
+                person.getTreeOfTests().endWorkWithFile();
                 //vymaze sa aj test z unsorted file
                 pcrUnsortedFile.delete(pcrAddress);
                 return new ResponseAndPCRTestId(ResponseType.PCR_EXISTS_FOR_THAT_TIME, testValue.getPCRId().toString());
-            }//TODO nezabundut na konci vkladania(ak bude uspesne updatnut vsetky upravovane recordy)
+            }
+            person.getTreeOfTestsByDate().endWorkWithFile();
             //pre dany okres vlozi test
             DistrictKey dKey = new DistrictKey(districtId);
             DistrictData dData = new DistrictData(dKey,null);
@@ -174,6 +176,8 @@ public class PCRSystem {
                 person.deletePCRTestByDate(deletedPersonDateTestData);
                 //vymaze sa aj test z unsorted file
                 pcrUnsortedFile.delete(pcrAddress);
+                person.getTreeOfTests().endWorkWithFile();
+                person.getTreeOfTestsByDate().endWorkWithFile();
                 return new ResponseAndPCRTestId(ResponseType.DISTRICT_DOESNT_EXIST,testValue.getPCRId().toString());
             }else {
                 PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
@@ -190,8 +194,11 @@ public class PCRSystem {
                         person.deletePCRTest(deletedPersonTestData);
                         //vymaze sa aj test z unsorted file
                         pcrUnsortedFile.delete(pcrAddress);
+                        person.getTreeOfTests().endWorkWithFile();
+                        person.getTreeOfTestsByDate().endWorkWithFile();
                         return new ResponseAndPCRTestId(ResponseType.PCR_WITH_ID_EXISTS,testValue.getPCRId().toString());
                     }
+                    district.getTreeOfTestedPeople().endWorkWithFile();
                 }else {
                     testValue.setDistrict(testedDistrictNode.get_value2().getAddressInUnsortedFile());
                     districtAddress = testedDistrictNode.get_value2().getAddressInUnsortedFile();
@@ -204,8 +211,11 @@ public class PCRSystem {
                         person.deletePCRTest(deletedPersonTestData);
                         //vymaze sa aj test z unsorted file
                         pcrUnsortedFile.delete(pcrAddress);
+                        person.getTreeOfTests().endWorkWithFile();
+                        person.getTreeOfTestsByDate().endWorkWithFile();
                         return new ResponseAndPCRTestId(ResponseType.PCR_WITH_ID_EXISTS,testValue.getPCRId().toString());
                     }
+                    district.getTreeOfTestedPeople().endWorkWithFile();
                 }
             }
             //pre dany kraj vlozi test
@@ -229,6 +239,9 @@ public class PCRSystem {
                 person.deletePCRTest(deletedPersonTestData);
                 //vymaze sa aj test z unsorted file
                 pcrUnsortedFile.delete(pcrAddress);
+                person.getTreeOfTests().endWorkWithFile();
+                person.getTreeOfTestsByDate().endWorkWithFile();
+                district.getTreeOfTestedPeople().endWorkWithFile();
                 return new ResponseAndPCRTestId(ResponseType.REGION_DOESNT_EXIST, testValue.getPCRId().toString());
             }else {
                 PCRKeyRegion pcrKeyRegion = new PCRKeyRegion(testValue.isResult(),testValue.getDateAndTimeOfTest());
@@ -254,10 +267,14 @@ public class PCRSystem {
                         person.deletePCRTest(deletedPersonTestData);
                         //vymaze sa aj test z unsorted file
                         pcrUnsortedFile.delete(pcrAddress);
+                        person.getTreeOfTests().endWorkWithFile();
+                        person.getTreeOfTestsByDate().endWorkWithFile();
+                        district.getTreeOfTestedPeople().endWorkWithFile();
                         return new ResponseAndPCRTestId(
                                 ResponseType.PCR_WITH_ID_EXISTS,
                                 testValue.getPCRId().toString());
                     }
+                    region.getTreeOfTests().endWorkWithFile();
                 }else {
                     testValue.setRegion(testedRegionNode.get_value2().getAddressInUnsortedFile());
                     regionAddress = testedRegionNode.get_value2().getAddressInUnsortedFile();
@@ -279,10 +296,14 @@ public class PCRSystem {
                         person.deletePCRTest(deletedPersonTestData);
                         //vymaze sa aj test z unsorted file
                         pcrUnsortedFile.delete(pcrAddress);
+                        person.getTreeOfTests().endWorkWithFile();
+                        person.getTreeOfTestsByDate().endWorkWithFile();
+                        district.getTreeOfTestedPeople().endWorkWithFile();
                         return new ResponseAndPCRTestId(
                                 ResponseType.PCR_WITH_ID_EXISTS,
                                 testValue.getPCRId().toString());
                     }
+                    region.getTreeOfTests().endWorkWithFile();
                 }
             }
             //pre dane pracovisko vlozi test
@@ -314,6 +335,10 @@ public class PCRSystem {
                 person.deletePCRTest(deletedPersonTestData);
                 //vymaze sa aj test z unsorted file
                 pcrUnsortedFile.delete(pcrAddress);
+                person.getTreeOfTests().endWorkWithFile();
+                person.getTreeOfTestsByDate().endWorkWithFile();
+                district.getTreeOfTestedPeople().endWorkWithFile();
+                region.getTreeOfTests().endWorkWithFile();
                 return new ResponseAndPCRTestId(
                         ResponseType.WORKPLACE_DOESNT_EXIST,
                         testValue.getPCRId().toString());
@@ -349,10 +374,15 @@ public class PCRSystem {
                         person.deletePCRTest(deletedPersonTestData);
                         //vymaze sa aj test z unsorted file
                         pcrUnsortedFile.delete(pcrAddress);
+                        person.getTreeOfTests().endWorkWithFile();
+                        person.getTreeOfTestsByDate().endWorkWithFile();
+                        district.getTreeOfTestedPeople().endWorkWithFile();
+                        region.getTreeOfTests().endWorkWithFile();
                         return new ResponseAndPCRTestId(
                                 ResponseType.PCR_EXISTS_FOR_THAT_TIME,
                                 testValue.getPCRId().toString());
                     }
+                    workplace.getTreeOfTests().endWorkWithFile();
                 }else {
                     testValue.setWorkplace(workplaceNode.get_value2().getAddressInUnsortedFile());
                     workplaceAddress = workplaceNode.get_value2().getAddressInUnsortedFile();
@@ -382,10 +412,15 @@ public class PCRSystem {
                         person.deletePCRTest(deletedPersonTestData);
                         //vymaze sa aj test z unsorted file
                         pcrUnsortedFile.delete(pcrAddress);
+                        person.getTreeOfTests().endWorkWithFile();
+                        person.getTreeOfTestsByDate().endWorkWithFile();
+                        district.getTreeOfTestedPeople().endWorkWithFile();
+                        region.getTreeOfTests().endWorkWithFile();
                         return new ResponseAndPCRTestId(
                                 ResponseType.PCR_EXISTS_FOR_THAT_TIME,
                                 testValue.getPCRId().toString());
                     }
+                    workplace.getTreeOfTests().endWorkWithFile();
                 }
             }
             pcrUnsortedFile.updateOnAddress(testValue,pcrAddress);
@@ -417,10 +452,13 @@ public class PCRSystem {
             return ResponseType.PERSON_DOESNT_EXIST;
         }
         Person person;
+        int personAddress = -1;
         if(((PersonKey) personNode.get_data1()).getIdNumber().equals(personId)){
-            person = ((Person) personNode.get_value1());
+            personAddress = ((Address) personNode.get_value1()).getAddressInUnsortedFile();
+            person = personUnsortedFile.find(personAddress);
         }else {
-            person = ((Person) personNode.get_value2());
+            personAddress = ((Address) personNode.get_value2()).getAddressInUnsortedFile();
+            person = personUnsortedFile.find(personAddress);
         }
 
         //prechadzanie vsetkych testov a ich mazanie
@@ -429,11 +467,11 @@ public class PCRSystem {
         if (nextTestNode != null){
             //pridavanie testov do docasneho array listu
             PCRKey tempPCRKey = new PCRKey(((PCRKey) nextTestNode.getKey()).getPCRId());
-            PCR tempPCRValue;
+            Address tempPCRValue;
             if (((PCRKey) nextTestNode.getNode().get_data1()).compareTo(((PCRKey) nextTestNode.getKey())) == 0){
-                tempPCRValue = ((PCR) nextTestNode.getNode().get_value1());
+                tempPCRValue = ((Address) nextTestNode.getNode().get_value1());
             }else {
-                tempPCRValue = ((PCR) nextTestNode.getNode().get_value2());
+                tempPCRValue = ((Address) nextTestNode.getNode().get_value2());
             }
             BST23Node tempNode = new PCRData(tempPCRKey,tempPCRValue);
             listOfTests.add(new NodeWithKey(tempNode,tempPCRKey));
@@ -441,9 +479,9 @@ public class PCRSystem {
             while (nextTestNode != null){
                 tempPCRKey = new PCRKey(((PCRKey) nextTestNode.getKey()).getPCRId());
                 if (((PCRKey) nextTestNode.getNode().get_data1()).compareTo(((PCRKey) nextTestNode.getKey())) == 0){
-                    tempPCRValue = ((PCR) nextTestNode.getNode().get_value1());
+                    tempPCRValue = ((Address) nextTestNode.getNode().get_value1());
                 }else {
-                    tempPCRValue = ((PCR) nextTestNode.getNode().get_value2());
+                    tempPCRValue = ((Address) nextTestNode.getNode().get_value2());
                 }
                 tempNode = new PCRData(tempPCRKey,tempPCRValue);
                 listOfTests.add(new NodeWithKey(tempNode,tempPCRKey));
@@ -452,8 +490,16 @@ public class PCRSystem {
             //mazanie testov
             for (int i = 0; i < listOfTests.size(); i++){
                 NodeWithKey personNodeWithKey = new NodeWithKey(personNode,personKey);
+                int testResultAddress = -1;
+                if (((PCRKey) listOfTests.get(i).getNode().get_data1()).compareTo((PCRKey) listOfTests.get(i).getKey()) == 0){
+                    testResultAddress = ((Address) listOfTests.get(i).getNode().get_value1()).getAddressInUnsortedFile();
+                }else {
+                    testResultAddress = ((Address) listOfTests.get(i).getNode().get_value2()).getAddressInUnsortedFile();
+                }
                 if (!deleteTestInAllTrees(personNodeWithKey, listOfTests.get(i).getNode(), (PCRKey) listOfTests.get(i).getKey())){
                     return ResponseType.PROBLEM_WITH_DELETING;
+                }else{
+                    pcrUnsortedFile.delete(testResultAddress);
                 }
             }
         }
@@ -461,6 +507,7 @@ public class PCRSystem {
         if (!treeOfPeople.delete(personData)){
             return ResponseType.PROBLEM_WITH_DELETING;
         }
+        personUnsortedFile.delete(personAddress);
         return ResponseType.SUCCESS;
     }
 
@@ -475,12 +522,15 @@ public class PCRSystem {
         PCRData tData = new PCRData(tKey, null);
         //najdenie testu
         NodeWithKey firstNode = treeOfPeople.getFirst();
-        BST23Node testResult;
+        BST23Node<PCRKey,Address> testResult;
+        Person person;
+        int personAddress = -1;
         if (firstNode == null){
             return ResponseType.PERSON_DOESNT_EXIST;
         }else {
-            //TODO upravit lebo tu nevraciu person ale iba jeho adresu
-            testResult = ((Person) firstNode.getNode().get_value1()).getTreeOfTests().find(tData);
+            personAddress = ((Address) firstNode.getNode().get_value1()).getAddressInUnsortedFile();
+            person = personUnsortedFile.find(personAddress);
+            testResult = person.getTreeOfTests().find(tData);
         }
         NodeWithKey nextNode = null;
         if (testResult == null){
@@ -488,9 +538,13 @@ public class PCRSystem {
             nextNode = treeOfPeople.getNext(firstNode.getNode(), ((PersonKey) firstNode.getKey()));
             while (nextNode != null){
                 if (((PersonKey) nextNode.getKey()).getIdNumber().equals(((PersonKey) nextNode.getNode().get_data1()).getIdNumber())){
-                    testResult = ((Person) nextNode.getNode().get_value1()).getTreeOfTests().find(tData);
+                    personAddress = ((Address) nextNode.getNode().get_value1()).getAddressInUnsortedFile();
+                    person = personUnsortedFile.find(personAddress);
+                    testResult = person.getTreeOfTests().find(tData);
                 }else {
-                    testResult = ((Person) nextNode.getNode().get_value2()).getTreeOfTests().find(tData);
+                    personAddress = ((Address) nextNode.getNode().get_value2()).getAddressInUnsortedFile();
+                    person = personUnsortedFile.find(personAddress);
+                    testResult = person.getTreeOfTests().find(tData);
                 }
                 if (testResult != null){
                     break;
@@ -504,7 +558,14 @@ public class PCRSystem {
             nextNode = firstNode;
         }
         //aktualne je v nextNode osoba a v testResult test ktory chceme mazat
+        int testResultAddress = -1;
+        if (((PCRKey) testResult.get_data1()).compareTo(tKey) == 0){
+            testResultAddress = testResult.get_value1().getAddressInUnsortedFile();
+        }else {
+            testResultAddress = testResult.get_value2().getAddressInUnsortedFile();
+        }
         if(deleteTestInAllTrees(nextNode, testResult, tKey)){
+            pcrUnsortedFile.delete(testResultAddress);
             return ResponseType.SUCCESS;
         }else {
             return ResponseType.PROBLEM_WITH_DELETING;
@@ -513,46 +574,61 @@ public class PCRSystem {
 
     private boolean deleteTestInAllTrees(NodeWithKey personNode, BST23Node testResult, PCRKey testKey){
         PCR testValue;
+        int testAddress = -1;
         Person person;
         if (((PCRKey) testResult.get_data1()).compareTo(testKey) == 0){
-            testValue = ((PCR) testResult.get_value1());
+            testAddress = ((Address) testResult.get_value1()).getAddressInUnsortedFile();
+            testValue = pcrUnsortedFile.find(testAddress);
         }else {
-            testValue = ((PCR) testResult.get_value2());
+            testAddress = ((Address) testResult.get_value2()).getAddressInUnsortedFile();
+            testValue = pcrUnsortedFile.find(testAddress);
         }
         if (((PersonKey) personNode.getKey()).getIdNumber().equals(((PersonKey) personNode.getNode().get_data1()).getIdNumber())){
-            person = ((Person) personNode.getNode().get_value1());
+            person = personUnsortedFile.find(((Address) personNode.getNode().get_value1()).getAddressInUnsortedFile());
         }else {
-            person = ((Person) personNode.getNode().get_value2());
+            person = personUnsortedFile.find(((Address) personNode.getNode().get_value2()).getAddressInUnsortedFile());
         }
 
         //mazanie pre okres
         PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
-        PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, testValue);
-        if(!testValue.getDistrict().deletePCRTest(deletedDistrictTestData)){
+        PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, new Address(testAddress));
+        District district = districtUnsortedFile.find(testValue.getDistrict());
+        if(!district.deletePCRTest(deletedDistrictTestData)){
             return false;
         }
+        district.getTreeOfTestedPeople().endWorkWithFile();
+
         //mazanie pre kraj
         PCRKeyRegion regionPCRKey = new PCRKeyRegion(testValue.isResult(),testValue.getDateAndTimeOfTest());
-        PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, testValue);
-        if (!testValue.getRegion().deletePCRTest(deletedRegionTestData)){
+        PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, new Address(testAddress));
+        Region region = regionUnsortedFile.find(testValue.getRegion());
+        if (!region.deletePCRTest(deletedRegionTestData)){
             return false;
         }
+        region.getTreeOfTests().endWorkWithFile();
+
         //mazanie pre pracovisko
         PCRKeyDate workplacePCRKey = new PCRKeyDate(testValue.getDateAndTimeOfTest());
-        PCRWorkplaceData deletedWorkplaceData = new PCRWorkplaceData(workplacePCRKey, testValue);
-        if (!testValue.getWorkplace().deletePCRTest(deletedWorkplaceData)){
+        PCRWorkplaceData deletedWorkplaceData = new PCRWorkplaceData(workplacePCRKey, new Address(testAddress));
+        Workplace workplace = workplaceUnsortedFile.find(testValue.getWorkplace());
+        if (!workplace.deletePCRTest(deletedWorkplaceData)){
             return false;
         }
+        workplace.getTreeOfTests().endWorkWithFile();
+
         //mazanie pre osobu
         PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
-        PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,testValue);
+        PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,new Address(testAddress));
         if (!person.deletePCRTestByDate(deletedPersonDateTestData)){
             return false;
         }
-        PCRData deletedPersonTestData = new PCRData(testKey, testValue);
+        person.getTreeOfTestsByDate().endWorkWithFile();
+
+        PCRData deletedPersonTestData = new PCRData(testKey, new Address(testAddress));
         if (!person.deletePCRTest(deletedPersonTestData)){
             return false;
         }
+        person.getTreeOfTests().endWorkWithFile();
         return true;
     }
 
@@ -565,19 +641,22 @@ public class PCRSystem {
         for (int i = 0; i < pNumberOfRegions; i++){
             RegionKey rKey = new RegionKey(i);
             Region rValue = new Region(i,"Kraj "+i);
-            RegionData rData = new RegionData(rKey,rValue);
+            int regionAddress = regionUnsortedFile.insert(rValue);
+            RegionData rData = new RegionData(rKey,new Address(regionAddress));
             treeOfRegions.insert(rData);
         }
         for (int i = 0; i < pNumberOfDistricts; i++){
             DistrictKey dKey = new DistrictKey(i);
             District dValue = new District(i, "Okres "+i);
-            DistrictData dData = new DistrictData(dKey,dValue);
+            int districtAddress = districtUnsortedFile.insert(dValue);
+            DistrictData dData = new DistrictData(dKey,new Address(districtAddress));
             treeOfDistricts.insert(dData);
         }
         for (int i = 0; i < pNumberOfWorkplaces; i++){
             WorkplaceKey wKey = new WorkplaceKey(i);
             Workplace wValue = new Workplace(i);
-            WorkplaceData wData = new WorkplaceData(wKey,wValue);
+            int workplaceAddress = workplaceUnsortedFile.insert(wValue);
+            WorkplaceData wData = new WorkplaceData(wKey,new Address(workplaceAddress));
             treeOfWorkplace.insert(wData);
         }
         for (int i = 0; i < pNumberOfPeople; i++){
@@ -589,16 +668,11 @@ public class PCRSystem {
                     2,
                     3,
                     Integer.toString(i+1));
-            PersonData pData = new PersonData(pKey,pValue);
+            int personAddress = personUnsortedFile.insert(pValue);
+            PersonData pData = new PersonData(pKey,new Address(personAddress));
             treeOfPeople.insert(pData);
         }
 
-        /*try {
-            File myObj = new File("rod_cislo_test.txt");
-            myObj.createNewFile();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
         for (int i = 0; i < pNumberOfTests; i++){
             double positivity = Math.random();
             boolean boolPos;
@@ -632,19 +706,6 @@ public class PCRSystem {
                     "nejaky popis",
                     null
             );
-            /* {
-                FileWriter myWriter;
-                if (i == 0){
-                    myWriter = new FileWriter("rod_cislo_test.txt");
-                    myWriter.write("");
-                }else{
-                    myWriter = new FileWriter("rod_cislo_test.txt", true);
-                }
-                myWriter.write(randIdPerson + " " + response.getPCRTestId() + "\n");
-                myWriter.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }*/
         }
     }
 
@@ -676,10 +737,13 @@ public class PCRSystem {
             return new PersonPCRResult(ResponseType.PERSON_DOESNT_EXIST,null);
         }else {
             Person person;
+            int personAddress = -1;
             if (((PersonKey) testedPersonNode.get_data1()).getIdNumber().equals(personId)) {
-                person = ((Person) testedPersonNode.get_value1());
+                personAddress = ((Address) testedPersonNode.get_value1()).getAddressInUnsortedFile();
+                person = personUnsortedFile.find(personAddress);
             } else {
-                person = ((Person) testedPersonNode.get_value2());
+                personAddress = ((Address) testedPersonNode.get_value2()).getAddressInUnsortedFile();
+                person = personUnsortedFile.find(personAddress);
             }
             PCRKey tKey;
             try{
@@ -701,39 +765,41 @@ public class PCRSystem {
                         + "." + person.getDateOfBirth().getYear();
                 String res;
                 if (((PCRKey) testNode.get_data1()).getPCRId().toString().equals(pcrId)) {
-                    if (((PCR) testNode.get_value1()).isResult()){
+                    PCR pcr = pcrUnsortedFile.find(((Address) testNode.get_value1()).getAddressInUnsortedFile());
+                    if (pcr.isResult()){
                         res = "POZITIVNY";
                     }else {
                         res = "NEGATIVNY";
                     }
-                    resultString += "\nKod testu: " + ((PCR) testNode.get_value1()).getPCRId() + "\nDatum a cas testu: "
-                            + ((PCR) testNode.get_value1()).getDateAndTimeOfTest().getDate() + "."
-                            + (((PCR) testNode.get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                            + ((PCR) testNode.get_value1()).getDateAndTimeOfTest().getYear() + " "
-                            + ((PCR) testNode.get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                            + ((PCR) testNode.get_value1()).getDateAndTimeOfTest().getMinutes() + "\nKod pracoviska: "
-                            + ((PCR) testNode.get_value1()).getWorkplaceId() + "\nKod okresu: "
-                            + ((PCR) testNode.get_value1()).getDistrictId() + "\nKod kraja: "
-                            + ((PCR) testNode.get_value1()).getRegionId() + "\nVysledok testu: "
-                            + res + "\nPoznamka k testu: " + ((PCR) testNode.get_value1()).getDescription();
+                    resultString += "\nKod testu: " + pcr.getPCRId() + "\nDatum a cas testu: "
+                            + pcr.getDateAndTimeOfTest().getDate() + "."
+                            + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                            + pcr.getDateAndTimeOfTest().getYear() + " "
+                            + pcr.getDateAndTimeOfTest().getHours() + ":"
+                            + pcr.getDateAndTimeOfTest().getMinutes() + "\nKod pracoviska: "
+                            + pcr.getWorkplaceId() + "\nKod okresu: "
+                            + pcr.getDistrictId() + "\nKod kraja: "
+                            + pcr.getRegionId() + "\nVysledok testu: "
+                            + res + "\nPoznamka k testu: " + pcr.getDescription();
                     return new PersonPCRResult(
                             ResponseType.SUCCESS, resultString);
                 } else {
-                    if (((PCR) testNode.get_value2()).isResult()){
+                    PCR pcr = pcrUnsortedFile.find(((Address) testNode.get_value2()).getAddressInUnsortedFile());
+                    if (pcr.isResult()){
                         res = "POZITIVNY";
                     }else {
                         res = "NEGATIVNY";
                     }
-                    resultString += "\nKod testu: " + ((PCR) testNode.get_value2()).getPCRId() + "\n Datum a cas testu: "
-                            + ((PCR) testNode.get_value2()).getDateAndTimeOfTest().getDate() + "."
-                            + (((PCR) testNode.get_value2()).getDateAndTimeOfTest().getMonth()+1) + "."
-                            + ((PCR) testNode.get_value2()).getDateAndTimeOfTest().getYear() + " "
-                            + ((PCR) testNode.get_value2()).getDateAndTimeOfTest().getHours() + ":"
-                            + ((PCR) testNode.get_value2()).getDateAndTimeOfTest().getMinutes() + "\nKod pracoviska: "
-                            + ((PCR) testNode.get_value2()).getWorkplaceId() + "\nKod okresu: "
-                            + ((PCR) testNode.get_value2()).getDistrictId() + "\nKod kraja: "
-                            + ((PCR) testNode.get_value2()).getRegionId() + "\nVysledok testu: "
-                            + res + "\nPoznamka k testu: " + ((PCR) testNode.get_value2()).getDescription();
+                    resultString += "\nKod testu: " + pcr.getPCRId() + "\n Datum a cas testu: "
+                            + pcr.getDateAndTimeOfTest().getDate() + "."
+                            + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                            + pcr.getDateAndTimeOfTest().getYear() + " "
+                            + pcr.getDateAndTimeOfTest().getHours() + ":"
+                            + pcr.getDateAndTimeOfTest().getMinutes() + "\nKod pracoviska: "
+                            + pcr.getWorkplaceId() + "\nKod okresu: "
+                            + pcr.getDistrictId() + "\nKod kraja: "
+                            + pcr.getRegionId() + "\nVysledok testu: "
+                            + res + "\nPoznamka k testu: " + pcr.getDescription();
                     return new PersonPCRResult(
                             ResponseType.SUCCESS, resultString);
                 }
@@ -762,39 +828,41 @@ public class PCRSystem {
                     + "." + person.getDateOfBirth().getYear();
             String res;
             if (((PCRKey) testNode.get_data1()).getPCRId().toString().equals(pcrId)) {
-                if (((PCR) testNode.get_value1()).isResult()){
+                PCR pcr = pcrUnsortedFile.find(((Address) testNode.get_value1()).getAddressInUnsortedFile());
+                if (pcr.isResult()){
                     res = "POZITIVNY";
                 }else {
                     res = "NEGATIVNY";
                 }
-                resultString += "\nKod testu: " + ((PCR) testNode.get_value1()).getPCRId() + "\nDatum a cas testu: "
-                        + ((PCR) testNode.get_value1()).getDateAndTimeOfTest().getDate() + "."
-                        + (((PCR) testNode.get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                        + ((PCR) testNode.get_value1()).getDateAndTimeOfTest().getYear() + " "
-                        + ((PCR) testNode.get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                        + ((PCR) testNode.get_value1()).getDateAndTimeOfTest().getMinutes() + "\nKod pracoviska: "
-                        + ((PCR) testNode.get_value1()).getWorkplaceId() + "\nKod okresu: "
-                        + ((PCR) testNode.get_value1()).getDistrictId() + "\nKod kraja: "
-                        + ((PCR) testNode.get_value1()).getRegionId() + "\nVysledok testu: "
-                        + res + "\nPoznamka k testu: " + ((PCR) testNode.get_value1()).getDescription();
+                resultString += "\nKod testu: " + pcr.getPCRId() + "\nDatum a cas testu: "
+                        + pcr.getDateAndTimeOfTest().getDate() + "."
+                        + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                        + pcr.getDateAndTimeOfTest().getYear() + " "
+                        + pcr.getDateAndTimeOfTest().getHours() + ":"
+                        + pcr.getDateAndTimeOfTest().getMinutes() + "\nKod pracoviska: "
+                        + pcr.getWorkplaceId() + "\nKod okresu: "
+                        + pcr.getDistrictId() + "\nKod kraja: "
+                        + pcr.getRegionId() + "\nVysledok testu: "
+                        + res + "\nPoznamka k testu: " + pcr.getDescription();
                 return new PersonPCRResult(
                         ResponseType.SUCCESS, resultString);
             } else {
-                if (((PCR) testNode.get_value2()).isResult()){
+                PCR pcr = pcrUnsortedFile.find(((Address) testNode.get_value2()).getAddressInUnsortedFile());
+                if (pcr.isResult()){
                     res = "POZITIVNY";
                 }else {
                     res = "NEGATIVNY";
                 }
-                resultString += "\nKod testu: " + ((PCR) testNode.get_value2()).getPCRId() + "\n Datum a cas testu: "
-                        + ((PCR) testNode.get_value2()).getDateAndTimeOfTest().getDate() + "."
-                        + (((PCR) testNode.get_value2()).getDateAndTimeOfTest().getMonth()+1) + "."
-                        + ((PCR) testNode.get_value2()).getDateAndTimeOfTest().getYear() + " "
-                        + ((PCR) testNode.get_value2()).getDateAndTimeOfTest().getHours() + ":"
-                        + ((PCR) testNode.get_value2()).getDateAndTimeOfTest().getMinutes() + "\nKod pracoviska: "
-                        + ((PCR) testNode.get_value2()).getWorkplaceId() + "\nKod okresu: "
-                        + ((PCR) testNode.get_value2()).getDistrictId() + "\nKod kraja: "
-                        + ((PCR) testNode.get_value2()).getRegionId() + "\nVysledok testu: "
-                        + res + "\nPoznamka k testu: " + ((PCR) testNode.get_value2()).getDescription();
+                resultString += "\nKod testu: " + pcr.getPCRId() + "\n Datum a cas testu: "
+                        + pcr.getDateAndTimeOfTest().getDate() + "."
+                        + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                        + pcr.getDateAndTimeOfTest().getYear() + " "
+                        + pcr.getDateAndTimeOfTest().getHours() + ":"
+                        + pcr.getDateAndTimeOfTest().getMinutes() + "\nKod pracoviska: "
+                        + pcr.getWorkplaceId() + "\nKod okresu: "
+                        + pcr.getDistrictId() + "\nKod kraja: "
+                        + pcr.getRegionId() + "\nVysledok testu: "
+                        + res + "\nPoznamka k testu: " + pcr.getDescription();
                 return new PersonPCRResult(
                         ResponseType.SUCCESS, resultString);
             }
@@ -818,33 +886,35 @@ public class PCRSystem {
             PCRWorkplaceData pDataTo = new PCRWorkplaceData(pKeyTo,null);
             if (((WorkplaceKey) workplaceNode.get_data1()).getWorkplaceId() == workplaceId){
                 ArrayList<BST23Node> listOfFoundNodes;
-                listOfFoundNodes = ((Workplace) workplaceNode.get_value1()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+                Workplace workplace = workplaceUnsortedFile.find(((Address) workplaceNode.get_value1()).getAddressInUnsortedFile());
+                listOfFoundNodes = workplace.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
-                    if (((PCR) listOfFoundNodes.get(i).get_value1()).isResult()){
+                    PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
+                    if (pcr.isResult()){
                         res = "POZITIVNY";
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
+                    Person person = personUnsortedFile.find(pcr.getPerson());
                     resultString += (i+1) + ". \n" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
                             + (person.getDateOfBirth().getMonth()+1)
                             + "." + person.getDateOfBirth().getYear() + "\n"
-                            + "Kod testu: " + ((PCR) listOfFoundNodes.get(i).get_value1()).getPCRId()
+                            + "Kod testu: " + pcr.getPCRId()
                             + "\nDatum a cas testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getDate() + "."
-                            + (((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getYear() + " "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMinutes()
+                            + pcr.getDateAndTimeOfTest().getDate() + "."
+                            + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                            + pcr.getDateAndTimeOfTest().getYear() + " "
+                            + pcr.getDateAndTimeOfTest().getHours() + ":"
+                            + pcr.getDateAndTimeOfTest().getMinutes()
                             + "\nKod pracoviska: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getWorkplaceId() + "\nKod okresu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDistrictId() + "\nKod kraja: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getRegionId() + "\nVysledok testu: "
+                            + pcr.getWorkplaceId() + "\nKod okresu: "
+                            + pcr.getDistrictId() + "\nKod kraja: "
+                            + pcr.getRegionId() + "\nVysledok testu: "
                             + res + "\nPoznamka k testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDescription()
+                            + pcr.getDescription()
                             + "\n-----------------------------------------\n";
                 }
                 if (listOfFoundNodes.size() == 0){
@@ -853,33 +923,35 @@ public class PCRSystem {
                 return new PersonPCRResult(ResponseType.SUCCESS,resultString);
             }else {
                 ArrayList<BST23Node> listOfFoundNodes;
-                listOfFoundNodes = ((Workplace) workplaceNode.get_value2()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+                Workplace workplace = workplaceUnsortedFile.find(((Address) workplaceNode.get_value2()).getAddressInUnsortedFile());
+                listOfFoundNodes = workplace.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
-                    if (((PCR) listOfFoundNodes.get(i).get_value1()).isResult()){
+                    PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
+                    if (pcr.isResult()){
                         res = "POZITIVNY";
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
+                    Person person = personUnsortedFile.find(pcr.getPerson());
                     resultString += (i+1) + ". \n" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
                             + (person.getDateOfBirth().getMonth()+1)
                             + "." + person.getDateOfBirth().getYear() + "\n"
-                            + "Kod testu: " + ((PCR) listOfFoundNodes.get(i).get_value1()).getPCRId()
+                            + "Kod testu: " + pcr.getPCRId()
                             + "\nDatum a cas testu:"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getDate() + "."
-                            + (((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getYear() + " "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMinutes()
+                            + pcr.getDateAndTimeOfTest().getDate() + "."
+                            + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                            + pcr.getDateAndTimeOfTest().getYear() + " "
+                            + pcr.getDateAndTimeOfTest().getHours() + ":"
+                            + pcr.getDateAndTimeOfTest().getMinutes()
                             + "\nKod pracoviska: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getWorkplaceId() + "\nKod okresu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDistrictId() + "\nKod kraja: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getRegionId() + "\nVysledok testu: "
+                            + pcr.getWorkplaceId() + "\nKod okresu: "
+                            + pcr.getDistrictId() + "\nKod kraja: "
+                            + pcr.getRegionId() + "\nVysledok testu: "
                             + res + "\nPoznamka k testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDescription()
+                            + pcr.getDescription()
                             + "\n-----------------------------------------\n";
                 }
                 if (listOfFoundNodes.size() == 0){
@@ -907,65 +979,69 @@ public class PCRSystem {
             PCRRegionData pDataTo = new PCRRegionData(pKeyTo,null);
             if (((RegionKey) regionNode.get_data1()).getRegionId() == regionId){
                 ArrayList<BST23Node> listOfFoundNodes;
-                listOfFoundNodes = ((Region) regionNode.get_value1()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+                Region region = regionUnsortedFile.find(((Address) regionNode.get_value1()).getAddressInUnsortedFile());
+                listOfFoundNodes = region.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
-                    if (((PCR) listOfFoundNodes.get(i).get_value1()).isResult()){
+                    PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
+                    if (pcr.isResult()){
                         res = "POZITIVNY";
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
+                    Person person = personUnsortedFile.find(pcr.getPerson());
                     resultString += (i+1) + ". \n" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
                             + (person.getDateOfBirth().getMonth()+1)
                             + "." + person.getDateOfBirth().getYear() + "\n"
-                            + "Chory na zaklade testu: " + ((PCR) listOfFoundNodes.get(i).get_value1()).getPCRId()
+                            + "Chory na zaklade testu: " + pcr.getPCRId()
                             + "\nDatum a cas testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getDate() + "."
-                            + (((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getYear() + " "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMinutes()
+                            + pcr.getDateAndTimeOfTest().getDate() + "."
+                            + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                            + pcr.getDateAndTimeOfTest().getYear() + " "
+                            + pcr.getDateAndTimeOfTest().getHours() + ":"
+                            + pcr.getDateAndTimeOfTest().getMinutes()
                             + "\nKod pracoviska: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getWorkplaceId() + "\nKod okresu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDistrictId() + "\nKod kraja: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getRegionId() + "\nVysledok testu: "
+                            + pcr.getWorkplaceId() + "\nKod okresu: "
+                            + pcr.getDistrictId() + "\nKod kraja: "
+                            + pcr.getRegionId() + "\nVysledok testu: "
                             + res + "\nPoznamka k testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDescription()
+                            + pcr.getDescription()
                             + "\n-----------------------------------------\n";
                 }
                 return new PersonPCRResult(ResponseType.SUCCESS,resultString);
             }else {
                 ArrayList<BST23Node> listOfFoundNodes;
-                listOfFoundNodes = ((Region) regionNode.get_value2()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+                Region region = regionUnsortedFile.find(((Address) regionNode.get_value2()).getAddressInUnsortedFile());
+                listOfFoundNodes = region.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
-                    if (((PCR) listOfFoundNodes.get(i).get_value1()).isResult()){
+                    PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
+                    if (pcr.isResult()){
                         res = "POZITIVNY";
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
+                    Person person = personUnsortedFile.find(pcr.getPerson());
                     resultString += (i+1) + ". \n" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
                             + (person.getDateOfBirth().getMonth()+1)
                             + "." + person.getDateOfBirth().getYear() + "\n"
-                            + "Chory na zaklade testu: " + ((PCR) listOfFoundNodes.get(i).get_value1()).getPCRId()
+                            + "Chory na zaklade testu: " + pcr.getPCRId()
                             + "\nDatum a cas testu:"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getDate() + "."
-                            + (((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getYear() + " "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMinutes()
+                            + pcr.getDateAndTimeOfTest().getDate() + "."
+                            + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                            + pcr.getDateAndTimeOfTest().getYear() + " "
+                            + pcr.getDateAndTimeOfTest().getHours() + ":"
+                            + pcr.getDateAndTimeOfTest().getMinutes()
                             + "\nKod pracoviska: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getWorkplaceId() + "\nKod okresu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDistrictId() + "\nKod kraja: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getRegionId() + "\nVysledok testu: "
+                            + pcr.getWorkplaceId() + "\nKod okresu: "
+                            + pcr.getDistrictId() + "\nKod kraja: "
+                            + pcr.getRegionId() + "\nVysledok testu: "
                             + res + "\nPoznamka k testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDescription()
+                            + pcr.getDescription()
                             + "\n-----------------------------------------\n";
                 }
                 return new PersonPCRResult(ResponseType.SUCCESS,resultString);
@@ -979,46 +1055,52 @@ public class PCRSystem {
         }
         String resultString = "";
         int numberOfSickPeople = 0;
-        BST23<RegionSickCountKey, Region> regionsSortedByNumberOfSickPeople = new BST23<>();
+        BST23<RegionSickCountKey, Address> regionsSortedByNumberOfSickPeople = new BST23<RegionSickCountKey,Address>(
+                "pcrSystemFiles/regSickAddress",
+                RegionSickCountKey.class,
+                Address.class);
         NodeWithKey firstNode = treeOfRegions.getFirst();
         if (firstNode == null){
             //ziadne kraje tak vrati prazdne
             return new PersonPCRResult(ResponseType.SUCCESS, resultString);
         }else {
+            int regionAddress = ((Address) firstNode.getNode().get_value1()).getAddressInUnsortedFile();
+            Region region = regionUnsortedFile.find(regionAddress);
             numberOfSickPeople = getNumberOfSickInRegion(
-                    ((Region) firstNode.getNode().get_value1()),
+                    region,
                     dateFrom,
                     dateTo);
             //vlozenie kraju do stromu kde sa usporiadava podla poctu chorych
             RegionSickCountKey key = new RegionSickCountKey(
                     numberOfSickPeople, ((RegionKey) firstNode.getKey()).getRegionId());
-            Region value = ((Region) firstNode.getNode().get_value1());
-            RegionSickCountData data = new RegionSickCountData(key,value);
+            RegionSickCountData data = new RegionSickCountData(key,new Address(regionAddress));
             regionsSortedByNumberOfSickPeople.insert(data);
         }
         NodeWithKey nextNode = treeOfRegions.getNext(firstNode.getNode(), (RegionKey) firstNode.getKey());
         while (nextNode != null){
             if (((RegionKey) nextNode.getKey()).getRegionId() == ((RegionKey) nextNode.getNode().get_data1()).getRegionId()){
+                int regionAddress = ((Address) nextNode.getNode().get_value1()).getAddressInUnsortedFile();
+                Region region = regionUnsortedFile.find(regionAddress);
                 numberOfSickPeople = getNumberOfSickInRegion(
-                        ((Region) nextNode.getNode().get_value1()),
+                        region,
                         dateFrom,
                         dateTo);
                 //vlozenie kraju do stromu kde sa usporiadava podla poctu chorych
                 RegionSickCountKey key = new RegionSickCountKey(
                         numberOfSickPeople, ((RegionKey) nextNode.getKey()).getRegionId());
-                Region value = ((Region) nextNode.getNode().get_value1());
-                RegionSickCountData data = new RegionSickCountData(key,value);
+                RegionSickCountData data = new RegionSickCountData(key,new Address(regionAddress));
                 regionsSortedByNumberOfSickPeople.insert(data);
             }else {
+                int regionAddress = ((Address) nextNode.getNode().get_value2()).getAddressInUnsortedFile();
+                Region region = regionUnsortedFile.find(regionAddress);
                 numberOfSickPeople = getNumberOfSickInRegion(
-                        ((Region) nextNode.getNode().get_value2()),
+                        region,
                         dateFrom,
                         dateTo);
                 //vlozenie kraju do stromu kde sa usporiadava podla poctu chorych
                 RegionSickCountKey key = new RegionSickCountKey(
                         numberOfSickPeople, ((RegionKey) nextNode.getKey()).getRegionId());
-                Region value = ((Region) nextNode.getNode().get_value2());
-                RegionSickCountData data = new RegionSickCountData(key,value);
+                RegionSickCountData data = new RegionSickCountData(key,new Address(regionAddress));
                 regionsSortedByNumberOfSickPeople.insert(data);
             }
             nextNode = treeOfRegions.getNext(nextNode.getNode(), ((RegionKey) nextNode.getKey()));
@@ -1046,12 +1128,14 @@ public class PCRSystem {
     private String getStringOfRegionsBySickCount(NodeWithKey pNodeWithKey, int nextValue){
         String resultString = "";
         if (((RegionSickCountKey) pNodeWithKey.getNode().get_data1()).equals(((RegionSickCountKey) pNodeWithKey.getKey()))){
-            resultString += nextValue + ". " + ((Region) pNodeWithKey.getNode().get_value1()).getName() + "\n" +
+            Region region = regionUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value1()).getAddressInUnsortedFile());
+            resultString += nextValue + ". " + region.getName() + "\n" +
                     "Pocet chorych = " +
                     ((RegionSickCountKey) pNodeWithKey.getNode().get_data1()).getNumberOfSickPeople() + "\n" +
                     "---------------------------------\n";
         }else {
-            resultString += nextValue + ". " + ((Region) pNodeWithKey.getNode().get_value2()).getName() + "\n" +
+            Region region = regionUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value2()).getAddressInUnsortedFile());
+            resultString += nextValue + ". " + region.getName() + "\n" +
                     "Pocet chorych = " +
                     ((RegionSickCountKey) pNodeWithKey.getNode().get_data2()).getNumberOfSickPeople() + "\n" +
                     "---------------------------------\n";
@@ -1074,46 +1158,52 @@ public class PCRSystem {
         }
         String resultString = "";
         int numberOfSickPeople = 0;
-        BST23<DistrictSickCountKey, District> districtSortedByNumberOfSickPeople = new BST23<>();
+        BST23<DistrictSickCountKey, Address> districtSortedByNumberOfSickPeople = new BST23<DistrictSickCountKey,Address>(
+                "pcrSystemFiles/distrSickAddress",
+                DistrictSickCountKey.class,
+                Address.class);
         NodeWithKey firstNode = treeOfDistricts.getFirst();
         if (firstNode == null){
             //ziadne okresy tak vrati prazdne
             return new PersonPCRResult(ResponseType.SUCCESS, resultString);
         }else {
+            int districtAddress = ((Address) firstNode.getNode().get_value1()).getAddressInUnsortedFile();
+            District district = districtUnsortedFile.find(districtAddress);
             numberOfSickPeople = getNumberOfSickInDistrict(
-                    ((District) firstNode.getNode().get_value1()),
+                    district,
                     dateFrom,
                     dateTo);
             //vlozenie okresu do stromu kde sa usporiadava podla poctu chorych
             DistrictSickCountKey key = new DistrictSickCountKey(
                     numberOfSickPeople, ((DistrictKey) firstNode.getKey()).getDistrictId());
-            District value = ((District) firstNode.getNode().get_value1());
-            DistrictSickCountData data = new DistrictSickCountData(key,value);
+            DistrictSickCountData data = new DistrictSickCountData(key,new Address(districtAddress));
             districtSortedByNumberOfSickPeople.insert(data);
         }
         NodeWithKey nextNode = treeOfDistricts.getNext(firstNode.getNode(), (DistrictKey) firstNode.getKey());
         while (nextNode != null){
             if (((DistrictKey) nextNode.getKey()).getDistrictId() == ((DistrictKey) nextNode.getNode().get_data1()).getDistrictId()){
+                int districtAddress = ((Address) nextNode.getNode().get_value1()).getAddressInUnsortedFile();
+                District district = districtUnsortedFile.find(districtAddress);
                 numberOfSickPeople = getNumberOfSickInDistrict(
-                        ((District) nextNode.getNode().get_value1()),
+                        district,
                         dateFrom,
                         dateTo);
                 //vlozenie okresu do stromu kde sa usporiadava podla poctu chorych
                 DistrictSickCountKey key = new DistrictSickCountKey(
                         numberOfSickPeople, ((DistrictKey) nextNode.getKey()).getDistrictId());
-                District value = ((District) nextNode.getNode().get_value1());
-                DistrictSickCountData data = new DistrictSickCountData(key,value);
+                DistrictSickCountData data = new DistrictSickCountData(key,new Address(districtAddress));
                 districtSortedByNumberOfSickPeople.insert(data);
             }else {
+                int districtAddress = ((Address) nextNode.getNode().get_value2()).getAddressInUnsortedFile();
+                District district = districtUnsortedFile.find(districtAddress);
                 numberOfSickPeople = getNumberOfSickInDistrict(
-                        ((District) nextNode.getNode().get_value2()),
+                        district,
                         dateFrom,
                         dateTo);
                 //vlozenie okresu do stromu kde sa usporiadava podla poctu chorych
                 DistrictSickCountKey key = new DistrictSickCountKey(
                         numberOfSickPeople, ((DistrictKey) nextNode.getKey()).getDistrictId());
-                District value = ((District) nextNode.getNode().get_value2());
-                DistrictSickCountData data = new DistrictSickCountData(key,value);
+                DistrictSickCountData data = new DistrictSickCountData(key,new Address(districtAddress));
                 districtSortedByNumberOfSickPeople.insert(data);
             }
             nextNode = treeOfDistricts.getNext(nextNode.getNode(), ((DistrictKey) nextNode.getKey()));
@@ -1141,11 +1231,13 @@ public class PCRSystem {
     private String getStringOfDistrictsBySickCount(NodeWithKey pNodeWithKey, int nextValue){
         String resultString = "";
         if (((DistrictSickCountKey) pNodeWithKey.getNode().get_data1()).equals(((DistrictSickCountKey) pNodeWithKey.getKey()))){
-            resultString += nextValue + ". " + ((District) pNodeWithKey.getNode().get_value1()).getName() + "\n" +
+            District district = districtUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value1()).getAddressInUnsortedFile());
+            resultString += nextValue + ". " + district.getName() + "\n" +
                     "Pocet chorych = " +
                     ((DistrictSickCountKey) pNodeWithKey.getNode().get_data1()).getNumberOfSickPeople() + "\n" +
                     "---------------------------------\n";
         }else {
+            District district = districtUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value2()).getAddressInUnsortedFile());
             resultString += nextValue + ". " + ((District) pNodeWithKey.getNode().get_value2()).getName() + "\n" +
                     "Pocet chorych = " +
                     ((DistrictSickCountKey) pNodeWithKey.getNode().get_data2()).getNumberOfSickPeople() + "\n" +
@@ -1180,65 +1272,69 @@ public class PCRSystem {
             PCRDistrictPositiveData pDataTo = new PCRDistrictPositiveData(pKeyTo,null);
             if (((DistrictKey) districtNode.get_data1()).getDistrictId() == districtId){
                 ArrayList<BST23Node> listOfFoundNodes;
-                listOfFoundNodes = ((District) districtNode.get_value1()).getTreeOfTestedPeople().intervalSearch(pDataFrom,pDataTo);
+                District district = districtUnsortedFile.find(((Address) districtNode.get_value1()).getAddressInUnsortedFile());
+                listOfFoundNodes = district.getTreeOfTestedPeople().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
-                    if (((PCR) listOfFoundNodes.get(i).get_value1()).isResult()){
+                    PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
+                    if (pcr.isResult()){
                         res = "POZITIVNY";
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
+                    Person person = personUnsortedFile.find(pcr.getPerson());
                     resultString += (i+1) + ". \n" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
                             + (person.getDateOfBirth().getMonth()+1)
                             + "." + person.getDateOfBirth().getYear() + "\n"
-                            + "Chory na zaklade testu: " + ((PCR) listOfFoundNodes.get(i).get_value1()).getPCRId()
+                            + "Chory na zaklade testu: " + pcr.getPCRId()
                             + "\nDatum a cas testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getDate() + "."
-                            + (((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getYear() + " "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMinutes()
+                            + pcr.getDateAndTimeOfTest().getDate() + "."
+                            + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                            + pcr.getDateAndTimeOfTest().getYear() + " "
+                            + pcr.getDateAndTimeOfTest().getHours() + ":"
+                            + pcr.getDateAndTimeOfTest().getMinutes()
                             + "\nKod pracoviska: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getWorkplaceId() + "\nKod okresu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDistrictId() + "\nKod kraja: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getRegionId() + "\nVysledok testu: "
+                            + pcr.getWorkplaceId() + "\nKod okresu: "
+                            + pcr.getDistrictId() + "\nKod kraja: "
+                            + pcr.getRegionId() + "\nVysledok testu: "
                             + res + "\nPoznamka k testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDescription()
+                            + pcr.getDescription()
                             + "\n-----------------------------------------\n";
                 }
                 return new PersonPCRResult(ResponseType.SUCCESS,resultString);
             }else {
                 ArrayList<BST23Node> listOfFoundNodes;
-                listOfFoundNodes = ((District) districtNode.get_value2()).getTreeOfTestedPeople().intervalSearch(pDataFrom,pDataTo);
+                District district = districtUnsortedFile.find(((Address) districtNode.get_value2()).getAddressInUnsortedFile());
+                listOfFoundNodes = district.getTreeOfTestedPeople().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
-                    if (((PCR) listOfFoundNodes.get(i).get_value1()).isResult()){
+                    PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
+                    if (pcr.isResult()){
                         res = "POZITIVNY";
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
+                    Person person = personUnsortedFile.find(pcr.getPerson());
                     resultString += (i+1) + ". \n" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
                             + (person.getDateOfBirth().getMonth()+1)
                             + "." + person.getDateOfBirth().getYear() + "\n"
-                            + "Chory na zaklade testu: " + ((PCR) listOfFoundNodes.get(i).get_value1()).getPCRId()
+                            + "Chory na zaklade testu: " + pcr.getPCRId()
                             + "\nDatum a cas testu:"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getDate() + "."
-                            + (((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getYear() + " "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMinutes()
+                            + pcr.getDateAndTimeOfTest().getDate() + "."
+                            + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                            + pcr.getDateAndTimeOfTest().getYear() + " "
+                            + pcr.getDateAndTimeOfTest().getHours() + ":"
+                            + pcr.getDateAndTimeOfTest().getMinutes()
                             + "\nKod pracoviska: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getWorkplaceId() + "\nKod okresu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDistrictId() + "\nKod kraja: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getRegionId() + "\nVysledok testu: "
+                            + pcr.getWorkplaceId() + "\nKod okresu: "
+                            + pcr.getDistrictId() + "\nKod kraja: "
+                            + pcr.getRegionId() + "\nVysledok testu: "
                             + res + "\nPoznamka k testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDescription()
+                            + pcr.getDescription()
                             + "\n-----------------------------------------\n";
                 }
                 return new PersonPCRResult(ResponseType.SUCCESS,resultString);
@@ -1263,33 +1359,35 @@ public class PCRSystem {
             PCRDistrictPositiveData pDataTo = new PCRDistrictPositiveData(pKeyTo,null);
             if (((DistrictKey) districtNode.get_data1()).getDistrictId() == districtId){
                 ArrayList<BST23Node> listOfFoundNodes;
-                listOfFoundNodes = ((District) districtNode.get_value1()).getTreeOfTestedPeople().intervalSearch(pDataFrom,pDataTo);
+                District district = districtUnsortedFile.find(((Address) districtNode.get_value1()).getAddressInUnsortedFile());
+                listOfFoundNodes = district.getTreeOfTestedPeople().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
-                    if (((PCR) listOfFoundNodes.get(i).get_value1()).isResult()){
+                    PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
+                    if (pcr.isResult()){
                         res = "POZITIVNY";
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
+                    Person person = personUnsortedFile.find(pcr.getPerson());
                     resultString += "" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
                             + (person.getDateOfBirth().getMonth()+1)
                             + "." + person.getDateOfBirth().getYear() + "\n"
-                            + "Kod testu: " + ((PCR) listOfFoundNodes.get(i).get_value1()).getPCRId()
+                            + "Kod testu: " + pcr.getPCRId()
                             + "\nDatum a cas testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getDate() + "."
-                            + (((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getYear() + " "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMinutes()
+                            + pcr.getDateAndTimeOfTest().getDate() + "."
+                            + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                            + pcr.getDateAndTimeOfTest().getYear() + " "
+                            + pcr.getDateAndTimeOfTest().getHours() + ":"
+                            + pcr.getDateAndTimeOfTest().getMinutes()
                             + "\nKod pracoviska: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getWorkplaceId() + "\nKod okresu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDistrictId() + "\nKod kraja: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getRegionId() + "\nVysledok testu: "
+                            + pcr.getWorkplaceId() + "\nKod okresu: "
+                            + pcr.getDistrictId() + "\nKod kraja: "
+                            + pcr.getRegionId() + "\nVysledok testu: "
                             + res + "\nPoznamka k testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDescription()
+                            + pcr.getDescription()
                             + "\n-----------------------------------------\n";
                 }
                 if (listOfFoundNodes.size() == 0){
@@ -1298,33 +1396,35 @@ public class PCRSystem {
                 return new ResultWIthNumberOfResults(ResponseType.SUCCESS,resultString, listOfFoundNodes.size());
             }else {
                 ArrayList<BST23Node> listOfFoundNodes;
-                listOfFoundNodes = ((District) districtNode.get_value2()).getTreeOfTestedPeople().intervalSearch(pDataFrom,pDataTo);
+                District district = districtUnsortedFile.find(((Address) districtNode.get_value2()).getAddressInUnsortedFile());
+                listOfFoundNodes = district.getTreeOfTestedPeople().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
-                    if (((PCR) listOfFoundNodes.get(i).get_value1()).isResult()){
+                    PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
+                    if (pcr.isResult()){
                         res = "POZITIVNY";
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
+                    Person person = personUnsortedFile.find(pcr.getPerson());
                     resultString += "" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
                             + (person.getDateOfBirth().getMonth()+1)
                             + "." + person.getDateOfBirth().getYear() + "\n"
-                            + "Kod testu: " + ((PCR) listOfFoundNodes.get(i).get_value1()).getPCRId()
+                            + "Kod testu: " + pcr.getPCRId()
                             + "\nDatum a cas testu:"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getDate() + "."
-                            + (((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getYear() + " "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMinutes()
+                            + pcr.getDateAndTimeOfTest().getDate() + "."
+                            + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                            + pcr.getDateAndTimeOfTest().getYear() + " "
+                            + pcr.getDateAndTimeOfTest().getHours() + ":"
+                            + pcr.getDateAndTimeOfTest().getMinutes()
                             + "\nKod pracoviska: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getWorkplaceId() + "\nKod okresu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDistrictId() + "\nKod kraja: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getRegionId() + "\nVysledok testu: "
+                            + pcr.getWorkplaceId() + "\nKod okresu: "
+                            + pcr.getDistrictId() + "\nKod kraja: "
+                            + pcr.getRegionId() + "\nVysledok testu: "
                             + res + "\nPoznamka k testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDescription()
+                            + pcr.getDescription()
                             + "\n-----------------------------------------\n";
                 }
                 if (listOfFoundNodes.size() == 0){
@@ -1352,33 +1452,35 @@ public class PCRSystem {
             PCRRegionData pDataTo = new PCRRegionData(pKeyTo,null);
             if (((RegionKey) regionNode.get_data1()).getRegionId() == regionId){
                 ArrayList<BST23Node> listOfFoundNodes;
-                listOfFoundNodes = ((Region) regionNode.get_value1()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+                Region region = regionUnsortedFile.find(((Address) regionNode.get_value1()).getAddressInUnsortedFile());
+                listOfFoundNodes = region.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
-                    if (((PCR) listOfFoundNodes.get(i).get_value1()).isResult()){
+                    PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
+                    if (pcr.isResult()){
                         res = "POZITIVNY";
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
+                    Person person = personUnsortedFile.find(pcr.getPerson());
                     resultString += person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
                             + (person.getDateOfBirth().getMonth()+1)
                             + "." + person.getDateOfBirth().getYear() + "\n"
-                            + "Kod testu: " + ((PCR) listOfFoundNodes.get(i).get_value1()).getPCRId()
+                            + "Kod testu: " + pcr.getPCRId()
                             + "\nDatum a cas testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getDate() + "."
-                            + (((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getYear() + " "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMinutes()
+                            + pcr.getDateAndTimeOfTest().getDate() + "."
+                            + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                            + pcr.getDateAndTimeOfTest().getYear() + " "
+                            + pcr.getDateAndTimeOfTest().getHours() + ":"
+                            + pcr.getDateAndTimeOfTest().getMinutes()
                             + "\nKod pracoviska: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getWorkplaceId() + "\nKod okresu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDistrictId() + "\nKod kraja: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getRegionId() + "\nVysledok testu: "
+                            + pcr.getWorkplaceId() + "\nKod okresu: "
+                            + pcr.getDistrictId() + "\nKod kraja: "
+                            + pcr.getRegionId() + "\nVysledok testu: "
                             + res + "\nPoznamka k testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDescription()
+                            + pcr.getDescription()
                             + "\n-----------------------------------------\n";
                 }
                 if (listOfFoundNodes.size() == 0){
@@ -1387,33 +1489,35 @@ public class PCRSystem {
                 return new ResultWIthNumberOfResults(ResponseType.SUCCESS,resultString, listOfFoundNodes.size());
             }else {
                 ArrayList<BST23Node> listOfFoundNodes;
-                listOfFoundNodes = ((Region) regionNode.get_value2()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+                Region region = regionUnsortedFile.find(((Address) regionNode.get_value2()).getAddressInUnsortedFile());
+                listOfFoundNodes = region.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
-                    if (((PCR) listOfFoundNodes.get(i).get_value1()).isResult()){
+                    PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
+                    if (pcr.isResult()){
                         res = "POZITIVNY";
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
+                    Person person = personUnsortedFile.find(pcr.getPerson());
                     resultString += person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
                             + (person.getDateOfBirth().getMonth()+1)
                             + "." + person.getDateOfBirth().getYear() + "\n"
-                            + "Kod testu: " + ((PCR) listOfFoundNodes.get(i).get_value1()).getPCRId()
+                            + "Kod testu: " + pcr.getPCRId()
                             + "\nDatum a cas testu:"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getDate() + "."
-                            + (((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getYear() + " "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMinutes()
+                            + pcr.getDateAndTimeOfTest().getDate() + "."
+                            + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                            + pcr.getDateAndTimeOfTest().getYear() + " "
+                            + pcr.getDateAndTimeOfTest().getHours() + ":"
+                            + pcr.getDateAndTimeOfTest().getMinutes()
                             + "\nKod pracoviska: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getWorkplaceId() + "\nKod okresu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDistrictId() + "\nKod kraja: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getRegionId() + "\nVysledok testu: "
+                            + pcr.getWorkplaceId() + "\nKod okresu: "
+                            + pcr.getDistrictId() + "\nKod kraja: "
+                            + pcr.getRegionId() + "\nVysledok testu: "
                             + res + "\nPoznamka k testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDescription()
+                            + pcr.getDescription()
                             + "\n-----------------------------------------\n";
                 }
                 if (listOfFoundNodes.size() == 0){
@@ -1447,14 +1551,15 @@ public class PCRSystem {
         }
         return new ResultWIthNumberOfResults(ResponseType.SUCCESS, resultString, numberOfResults);
     }
-
+    
     public PersonPCRResult findPCRTestById(String PCRId){
         NodeWithKey firstNode = treeOfPeople.getFirst();
         PersonPCRResult result;
         if (firstNode == null){
             return new PersonPCRResult(ResponseType.SUCCESS, null);
         }else {
-            result = findTestResultForPerson(((Person) firstNode.getNode().get_value1()), PCRId);
+            Person person = personUnsortedFile.find(((Address) firstNode.getNode().get_value1()).getAddressInUnsortedFile());
+            result = findTestResultForPerson(person, PCRId);
             if (result.getResponseType() == ResponseType.SUCCESS){
                 return result;
             }
@@ -1465,9 +1570,11 @@ public class PCRSystem {
         NodeWithKey nextNode = treeOfPeople.getNext(firstNode.getNode(), ((PersonKey) firstNode.getKey()));
         while (nextNode != null){
             if (((PersonKey) nextNode.getKey()).getIdNumber().equals(((PersonKey) nextNode.getNode().get_data1()).getIdNumber())){
-                result = findTestResultForPerson(((Person) nextNode.getNode().get_value1()), PCRId);
+                Person person = personUnsortedFile.find(((Address) nextNode.getNode().get_value1()).getAddressInUnsortedFile());
+                result = findTestResultForPerson(person, PCRId);
             }else {
-                result = findTestResultForPerson(((Person) nextNode.getNode().get_value2()), PCRId);
+                Person person = personUnsortedFile.find(((Address) nextNode.getNode().get_value2()).getAddressInUnsortedFile());
+                result = findTestResultForPerson(person, PCRId);
             }
             if (result.getResponseType() == ResponseType.SUCCESS){
                 return result;
@@ -1512,65 +1619,69 @@ public class PCRSystem {
         PCRRegionData pDataTo = new PCRRegionData(pKeyTo,null);
         if (((RegionKey) pNodeWithKey.getNode().get_data1()).getRegionId() == ((RegionKey) pNodeWithKey.getKey()).getRegionId()){
             ArrayList<BST23Node> listOfFoundNodes;
-            listOfFoundNodes = ((Region) pNodeWithKey.getNode().get_value1()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+            Region region = regionUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value1()).getAddressInUnsortedFile());
+            listOfFoundNodes = region.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
             for (int i = 0; i < listOfFoundNodes.size(); i++){
                 String res;
-                if (((PCR) listOfFoundNodes.get(i).get_value1()).isResult()){
+                PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
+                if (pcr.isResult()){
                     res = "POZITIVNY";
                 }else {
                     res = "NEGATIVNY";
                 }
-                Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
+                Person person = personUnsortedFile.find(pcr.getPerson());
                 resultString += person.getName() + " " + person.getSurname()
                         + "\n" + person.getIdNumber() +
                         "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
                         + (person.getDateOfBirth().getMonth()+1)
                         + "." + person.getDateOfBirth().getYear() + "\n"
-                        + "Chory na zaklade testu: " + ((PCR) listOfFoundNodes.get(i).get_value1()).getPCRId()
+                        + "Chory na zaklade testu: " + pcr.getPCRId()
                         + "\nDatum a cas testu: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getDate() + "."
-                        + (((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getYear() + " "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMinutes()
+                        + pcr.getDateAndTimeOfTest().getDate() + "."
+                        + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                        + pcr.getDateAndTimeOfTest().getYear() + " "
+                        + pcr.getDateAndTimeOfTest().getHours() + ":"
+                        + pcr.getDateAndTimeOfTest().getMinutes()
                         + "\nKod pracoviska: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getWorkplaceId() + "\nKod okresu: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDistrictId() + "\nKod kraja: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getRegionId() + "\nVysledok testu: "
+                        + pcr.getWorkplaceId() + "\nKod okresu: "
+                        + pcr.getDistrictId() + "\nKod kraja: "
+                        + pcr.getRegionId() + "\nVysledok testu: "
                         + res + "\nPoznamka k testu: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDescription()
+                        + pcr.getDescription()
                         + "\n-----------------------------------------\n";
             }
             return new ResultWIthNumberOfResults(null,resultString, listOfFoundNodes.size());
         }else {
             ArrayList<BST23Node> listOfFoundNodes;
-            listOfFoundNodes = ((Region) pNodeWithKey.getNode().get_value2()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+            Region region = regionUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value2()).getAddressInUnsortedFile());
+            listOfFoundNodes = region.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
             for (int i = 0; i < listOfFoundNodes.size(); i++){
                 String res;
-                if (((PCR) listOfFoundNodes.get(i).get_value1()).isResult()){
+                PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
+                if (pcr.isResult()){
                     res = "POZITIVNY";
                 }else {
                     res = "NEGATIVNY";
                 }
-                Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
+                Person person = personUnsortedFile.find(pcr.getPerson());
                 resultString += person.getName() + " " + person.getSurname()
                         + "\n" + person.getIdNumber() +
                         "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
                         + (person.getDateOfBirth().getMonth()+1)
                         + "." + person.getDateOfBirth().getYear() + "\n"
-                        + "Chory na zaklade testu: " + ((PCR) listOfFoundNodes.get(i).get_value1()).getPCRId()
+                        + "Chory na zaklade testu: " + pcr.getPCRId()
                         + "\nDatum a cas testu:"
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getDate() + "."
-                        + (((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getYear() + " "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMinutes()
+                        + pcr.getDateAndTimeOfTest().getDate() + "."
+                        + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                        + pcr.getDateAndTimeOfTest().getYear() + " "
+                        + pcr.getDateAndTimeOfTest().getHours() + ":"
+                        + pcr.getDateAndTimeOfTest().getMinutes()
                         + "\nKod pracoviska: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getWorkplaceId() + "\nKod okresu: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDistrictId() + "\nKod kraja: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getRegionId() + "\nVysledok testu: "
+                        + pcr.getWorkplaceId() + "\nKod okresu: "
+                        + pcr.getDistrictId() + "\nKod kraja: "
+                        + pcr.getRegionId() + "\nVysledok testu: "
                         + res + "\nPoznamka k testu: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDescription()
+                        + pcr.getDescription()
                         + "\n-----------------------------------------\n";
             }
             return new ResultWIthNumberOfResults(null,resultString, listOfFoundNodes.size());
@@ -1585,70 +1696,72 @@ public class PCRSystem {
         PCRRegionData pDataTo = new PCRRegionData(pKeyTo,null);
         if (((RegionKey) pNodeWithKey.getNode().get_data1()).getRegionId() == ((RegionKey) pNodeWithKey.getKey()).getRegionId()){
             ArrayList<BST23Node> listOfFoundNodes;
-            listOfFoundNodes = ((Region) pNodeWithKey.getNode().get_value1()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+            Region region = regionUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value1()).getAddressInUnsortedFile());
+            listOfFoundNodes = region.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
             for (int i = 0; i < listOfFoundNodes.size(); i++){
                 String res;
-                if (((PCR) listOfFoundNodes.get(i).get_value1()).isResult()){
+                PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
+                if (pcr.isResult()){
                     res = "POZITIVNY";
                 }else {
                     res = "NEGATIVNY";
                 }
-                Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
+                Person person = personUnsortedFile.find(pcr.getPerson());
                 resultString += person.getName() + " " + person.getSurname()
                         + "\n" + person.getIdNumber() +
                         "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
                         + (person.getDateOfBirth().getMonth()+1)
                         + "." + person.getDateOfBirth().getYear() + "\n"
-                        + "Kod testu: " + ((PCR) listOfFoundNodes.get(i).get_value1()).getPCRId()
+                        + "Kod testu: " + pcr.getPCRId()
                         + "\nDatum a cas testu: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getDate() + "."
-                        + (((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getYear() + " "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMinutes()
+                        + pcr.getDateAndTimeOfTest().getDate() + "."
+                        + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                        + pcr.getDateAndTimeOfTest().getYear() + " "
+                        + pcr.getDateAndTimeOfTest().getHours() + ":"
+                        + pcr.getDateAndTimeOfTest().getMinutes()
                         + "\nKod pracoviska: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getWorkplaceId() + "\nKod okresu: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDistrictId() + "\nKod kraja: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getRegionId() + "\nVysledok testu: "
+                        + pcr.getWorkplaceId() + "\nKod okresu: "
+                        + pcr.getDistrictId() + "\nKod kraja: "
+                        + pcr.getRegionId() + "\nVysledok testu: "
                         + res + "\nPoznamka k testu: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDescription()
+                        + pcr.getDescription()
                         + "\n-----------------------------------------\n";
             }
             return new ResultWIthNumberOfResults(null, resultString, listOfFoundNodes.size());
-            //return resultString;
         }else {
             ArrayList<BST23Node> listOfFoundNodes;
+            Region region = regionUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value2()).getAddressInUnsortedFile());
             listOfFoundNodes = ((Region) pNodeWithKey.getNode().get_value2()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
             for (int i = 0; i < listOfFoundNodes.size(); i++){
                 String res;
-                if (((PCR) listOfFoundNodes.get(i).get_value1()).isResult()){
+                PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
+                if (pcr.isResult()){
                     res = "POZITIVNY";
                 }else {
                     res = "NEGATIVNY";
                 }
-                Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
+                Person person = personUnsortedFile.find(pcr.getPerson());
                 resultString += person.getName() + " " + person.getSurname()
                         + "\n" + person.getIdNumber() +
                         "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
                         + (person.getDateOfBirth().getMonth()+1)
                         + "." + person.getDateOfBirth().getYear() + "\n"
-                        + "Kod testu: " + ((PCR) listOfFoundNodes.get(i).get_value1()).getPCRId()
+                        + "Kod testu: " + pcr.getPCRId()
                         + "\nDatum a cas testu:"
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getDate() + "."
-                        + (((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getYear() + " "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMinutes()
+                        + pcr.getDateAndTimeOfTest().getDate() + "."
+                        + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                        + pcr.getDateAndTimeOfTest().getYear() + " "
+                        + pcr.getDateAndTimeOfTest().getHours() + ":"
+                        + pcr.getDateAndTimeOfTest().getMinutes()
                         + "\nKod pracoviska: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getWorkplaceId() + "\nKod okresu: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDistrictId() + "\nKod kraja: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getRegionId() + "\nVysledok testu: "
+                        + pcr.getWorkplaceId() + "\nKod okresu: "
+                        + pcr.getDistrictId() + "\nKod kraja: "
+                        + pcr.getRegionId() + "\nVysledok testu: "
                         + res + "\nPoznamka k testu: "
-                        + ((PCR) listOfFoundNodes.get(i).get_value1()).getDescription()
+                        + pcr.getDescription()
                         + "\n-----------------------------------------\n";
             }
             return new ResultWIthNumberOfResults(null, resultString, listOfFoundNodes.size());
-            //return resultString;
         }
     }
 
@@ -1662,76 +1775,80 @@ public class PCRSystem {
         }else {
             if (((PersonKey) personNode.get_data1()).getIdNumber().equals(personId)){
                 ArrayList<BST23Node> listOfFoundNodes;
-                listOfFoundNodes = ((Person) personNode.get_value1()).getTreeOfTestsByDate().inOrder();
+                Person person = personUnsortedFile.find(((Address) personNode.get_value1()).getAddressInUnsortedFile());
+                listOfFoundNodes = person.getTreeOfTestsByDate().inOrder();
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
-                    if (((PCR) listOfFoundNodes.get(i).get_value1()).isResult()){
+                    PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
+                    if (pcr.isResult()){
                         res = "POZITIVNY";
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
+                    //Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
                     resultString += (i+1) + ". \n" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
                             + (person.getDateOfBirth().getMonth()+1)
                             + "." + person.getDateOfBirth().getYear() + "\n"
-                            + "Kod testu: " + ((PCR) listOfFoundNodes.get(i).get_value1()).getPCRId()
+                            + "Kod testu: " + pcr.getPCRId()
                             + "\nDatum a cas testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getDate() + "."
-                            + (((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getYear() + " "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMinutes()
+                            + pcr.getDateAndTimeOfTest().getDate() + "."
+                            + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                            + pcr.getDateAndTimeOfTest().getYear() + " "
+                            + pcr.getDateAndTimeOfTest().getHours() + ":"
+                            + pcr.getDateAndTimeOfTest().getMinutes()
                             + "\nKod pracoviska: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getWorkplaceId() + "\nKod okresu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDistrictId() + "\nKod kraja: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getRegionId() + "\nVysledok testu: "
+                            + pcr.getWorkplaceId() + "\nKod okresu: "
+                            + pcr.getDistrictId() + "\nKod kraja: "
+                            + pcr.getRegionId() + "\nVysledok testu: "
                             + res + "\nPoznamka k testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDescription()
+                            + pcr.getDescription()
                             + "\n-----------------------------------------\n";
                 }
                 if (listOfFoundNodes.size() == 0){
                     resultString = "Ziadne najdene testy pre osobu " +
-                            ((Person) personNode.get_value1()).getName() + " " +
-                            ((Person) personNode.get_value1()).getSurname() + ".";
+                            person.getName() + " " +
+                            person.getSurname() + ".";
                 }
                 return new PersonPCRResult(ResponseType.SUCCESS,resultString);
             }else {
                 ArrayList<BST23Node> listOfFoundNodes;
-                listOfFoundNodes = ((Person) personNode.get_value2()).getTreeOfTests().inOrder();
+                Person person = personUnsortedFile.find(((Address) personNode.get_value2()).getAddressInUnsortedFile());
+                listOfFoundNodes = person.getTreeOfTests().inOrder();
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
-                    if (((PCR) listOfFoundNodes.get(i).get_value1()).isResult()){
+                    PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
+                    if (pcr.isResult()){
                         res = "POZITIVNY";
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
+                    //Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
                     resultString += (i+1) + ". \n" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
                             + (person.getDateOfBirth().getMonth()+1)
                             + "." + person.getDateOfBirth().getYear() + "\n"
-                            + "Kod testu: " + ((PCR) listOfFoundNodes.get(i).get_value1()).getPCRId()
+                            + "Kod testu: " + pcr.getPCRId()
                             + "\nDatum a cas testu:"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getDate() + "."
-                            + (((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMonth()+1) + "."
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getYear() + " "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getHours() + ":"
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDateAndTimeOfTest().getMinutes()
+                            + pcr.getDateAndTimeOfTest().getDate() + "."
+                            + (pcr.getDateAndTimeOfTest().getMonth()+1) + "."
+                            + pcr.getDateAndTimeOfTest().getYear() + " "
+                            + pcr.getDateAndTimeOfTest().getHours() + ":"
+                            + pcr.getDateAndTimeOfTest().getMinutes()
                             + "\nKod pracoviska: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getWorkplaceId() + "\nKod okresu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDistrictId() + "\nKod kraja: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getRegionId() + "\nVysledok testu: "
+                            + pcr.getWorkplaceId() + "\nKod okresu: "
+                            + pcr.getDistrictId() + "\nKod kraja: "
+                            + pcr.getRegionId() + "\nVysledok testu: "
                             + res + "\nPoznamka k testu: "
-                            + ((PCR) listOfFoundNodes.get(i).get_value1()).getDescription()
+                            + pcr.getDescription()
                             + "\n-----------------------------------------\n";
                 }
                 if (listOfFoundNodes.size() == 0){
                     resultString = "Ziadne najdene testy pre osobu " +
-                            ((Person) personNode.get_value2()).getName() + " " +
-                            ((Person) personNode.get_value2()).getSurname() + ".";
+                            person.getName() + " " +
+                            person.getSurname() + ".";
                 }
                 return new PersonPCRResult(ResponseType.SUCCESS,resultString);
             }
@@ -1740,7 +1857,7 @@ public class PCRSystem {
 
     public boolean saveDataToFile() throws IOException {
         //ukladanie okresov
-        FileWriter csvWriter = new FileWriter("okresy.csv");
+        /*FileWriter csvWriter = new FileWriter("okresy.csv");
 
         NodeWithKey nextDistrict = treeOfDistricts.getFirst();
         if (nextDistrict != null){
@@ -1877,12 +1994,12 @@ public class PCRSystem {
         csvWriterTests.flush();
         csvWriterTests.close();
         csvWriter.flush();
-        csvWriter.close();
+        csvWriter.close();*/
         return true;
     }
 
     public void writeTestsForPersonToFile(FileWriter pFileWriter, Person pPerson) throws IOException {
-        NodeWithKey nextTest = pPerson.getTreeOfTests().getFirst();
+        /*NodeWithKey nextTest = pPerson.getTreeOfTests().getFirst();
         if (nextTest != null){
             pFileWriter.append(""+ ((PCRKey) nextTest.getKey()).getPCRId());
             pFileWriter.append(",");
@@ -1971,11 +2088,11 @@ public class PCRSystem {
             }
             nextTest = pPerson.getTreeOfTests().getNext(
                     nextTest.getNode(), ((PCRKey) nextTest.getKey()));
-        }
+        }*/
     }
 
     public boolean loadDataFromFile() throws IOException {
-        BST23<PersonKey, Person> newTreeOfPeople = new BST23<>();
+        /*BST23<PersonKey, Person> newTreeOfPeople = new BST23<>();
         BST23<RegionKey, Region> newTreeOfRegions = new BST23<>();
         BST23<DistrictKey, District> newTreeOfDistricts = new BST23<>();
         BST23<WorkplaceKey, Workplace> newTreeOfWorkplace = new BST23<>();
@@ -2075,7 +2192,7 @@ public class PCRSystem {
         }
         testReader.close();
 
-
+*/
         return true;
     }
 }

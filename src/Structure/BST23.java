@@ -265,7 +265,7 @@ public class BST23<T extends  Comparable<T> & IData, V extends IData> {
         }
     }
 
-    private boolean setTreeEmpty(){
+    public boolean setTreeEmpty(){
         try {
             fileOfRecords.setLength(HEADER_SIZE);
             nextAddress = HEADER_SIZE;
