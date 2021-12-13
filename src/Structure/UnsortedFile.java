@@ -1,6 +1,7 @@
 package Structure;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.PriorityQueue;
@@ -316,5 +317,40 @@ public class UnsortedFile<T extends IData> {
             return false;
         }
         return true;
+    }
+
+    public ArrayList<RecordWithAddress<T>> getAllRecordsFromFile(){
+        ArrayList<RecordWithAddress<T>> listOfRecords = new ArrayList<>();
+        if (nextAddress == HEADER_SIZE){
+            return listOfRecords;
+        }else {
+            int next = HEADER_SIZE;
+            while (next < nextAddress){
+                T data;
+                try {
+                    data = (T) classType.newInstance().createClass();
+                }catch (InstantiationException exception){
+                    Logger.getLogger(UnsortedFile.class.getName()).log(Level.SEVERE, null, exception);
+                    return null;
+                }catch (IllegalAccessException exception){
+                    Logger.getLogger(UnsortedFile.class.getName()).log(Level.SEVERE, null, exception);
+                    return null;
+                }
+                //nacitanie pola bytov zo suboru
+                byte[] arrayOfDataBytes = new byte[data.getSize()];
+                try {
+                    fileOfRecords.seek(next);
+                    fileOfRecords.read(arrayOfDataBytes);
+                }catch (IOException exception){
+                    return null;
+                }
+
+                //nacitanie hodnot pre node z pola bytov
+                data.FromByteArray(arrayOfDataBytes);
+                listOfRecords.add(new RecordWithAddress<T>(data,next));
+                next += data.getSize();
+            }
+            return listOfRecords;
+        }
     }
 }

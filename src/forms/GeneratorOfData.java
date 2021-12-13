@@ -20,9 +20,9 @@ public class GeneratorOfData {
     private menu menuForm;
 
     public GeneratorOfData() {
-        numberOfRegionsTextField.setText("10");
-        numberOfDistrictsTextField.setText("200");
-        numberOfWorkplacesTextField.setText("1000");
+        numberOfRegionsTextField.setText("5");
+        numberOfDistrictsTextField.setText("50");
+        numberOfWorkplacesTextField.setText("100");
 
         frame = new JFrame("PCR system");
         frame.setContentPane(generatorPanel);

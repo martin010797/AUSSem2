@@ -28,6 +28,7 @@ public class menu {
     private FindPCRTest_16 findPCRTest_16form;
     private DeletePCRTest_18 deletePCRTest_18form;
     private DeletePerson_19 deletePerson_19form;
+    private ListRecordsFromFiles listRecordsFromFilesForm;
 
     private OutputForTests outputForTestsForm;
 
@@ -96,6 +97,7 @@ public class menu {
         findPCRTest_16form = new FindPCRTest_16(this, frame, pcrSystem);
         deletePCRTest_18form = new DeletePCRTest_18(this, frame, pcrSystem);
         deletePerson_19form = new DeletePerson_19(this, frame, pcrSystem);
+        listRecordsFromFilesForm = new ListRecordsFromFiles(pcrSystem,this,frame,outputForTestsForm);
 
         //pcrSystem = new PCRSystem();
         Button1.addActionListener(new ActionListener() {
@@ -272,7 +274,7 @@ public class menu {
         loadDataButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                try {
+                /*try {
                     if (pcrSystem.loadDataFromFile()){
                         JOptionPane.showMessageDialog(
                                 null,
@@ -286,7 +288,11 @@ public class menu {
                     JOptionPane.showMessageDialog(
                             null,
                             "Chyba pri nacitani dat.");
-                }
+                }*/
+                frame.setContentPane(listRecordsFromFilesForm.getListRecordsPanel());
+                frame.pack();
+                frame.setVisible(true);
+                frame.setLocationRelativeTo(null);
             }
         });
         saveDataButton.addActionListener(new ActionListener() {
@@ -308,6 +314,7 @@ public class menu {
                             "Chyba pri praci so subormi.");
                 }*/
                 pcrSystem.endWorkWithTrees();
+                pcrSystem.endWorkWithUnsortedFiles();
             }
         });
     }

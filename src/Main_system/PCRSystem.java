@@ -1,10 +1,7 @@
 package Main_system;
 
 import Models.*;
-import Structure.BST23;
-import Structure.BST23Node;
-import Structure.NodeWithKey;
-import Structure.UnsortedFile;
+import Structure.*;
 import Tests.TestingData;
 
 import java.io.*;
@@ -93,6 +90,14 @@ public class PCRSystem {
         treeOfWorkplace.endWorkWithFile();
         treeOfRegions.endWorkWithFile();
         treeOfPeople.endWorkWithFile();
+    }
+
+    public void endWorkWithUnsortedFiles(){
+        pcrUnsortedFile.endWorkWithFile();
+        personUnsortedFile.endWorkWithFile();
+        workplaceUnsortedFile.endWorkWithFile();
+        regionUnsortedFile.endWorkWithFile();
+        districtUnsortedFile.endWorkWithFile();
     }
 
     public ResponseAndPCRTestId insertPCRTest(String personIdNumber,
@@ -2203,5 +2208,150 @@ public class PCRSystem {
 
 */
         return true;
+    }
+
+    public String getAllRecordsPCRUnsorted(){
+        String result = "";
+        ArrayList<RecordWithAddress<PCR>> listOfRecords = pcrUnsortedFile.getAllRecordsFromFile();
+        for (RecordWithAddress value: listOfRecords){
+            result += "-------------------------------------------------------\n";
+            result += "Adresa: " + value.getAddress() + ", validita: " + ((PCR) value.getRecord()).isValid() + "\n";
+            result += "Id testu: " + ((PCR) value.getRecord()).getPCRId() + ", pozitivita: " + ((PCR) value.getRecord()).isResult() + "\n";
+            result += "Datum: " + ((PCR) value.getRecord()).getDateAndTimeOfTest() + ", popis: " + ((PCR) value.getRecord()).getDescription() + "\n";
+            result += "Id kraja: " + ((PCR) value.getRecord()).getRegionId() + ", Id okresu: "
+                    + ((PCR) value.getRecord()).getDistrictId() + ", ID pracoviska" + ((PCR) value.getRecord()).getWorkplaceId() + "\n";
+            result += "Adresa kraja: " + ((PCR) value.getRecord()).getRegion() + ", Adresa okresu: "
+                    + ((PCR) value.getRecord()).getDistrict() + ", Adresa pracoviska" + ((PCR) value.getRecord()).getWorkplace() + "\n";
+            result += "Id osoby: " + ((PCR) value.getRecord()).getPatientId() + ", Adresa osoby: " + ((PCR) value.getRecord()).getPerson() + "\n";
+            result += "Velkost: " + ((PCR) value.getRecord()).getSize() +"\n";
+            result += "-------------------------------------------------------\n";
+        }
+        return result;
+    }
+    public String getAllRecordsPersonUnsorted(){
+        String result = "";
+        ArrayList<RecordWithAddress<Person>> listOfRecords = personUnsortedFile.getAllRecordsFromFile();
+        for (RecordWithAddress value: listOfRecords){
+            result += "-------------------------------------------------------\n";
+            result += "Adresa: " + value.getAddress() + ", validita: " + ((Person) value.getRecord()).isValid() + "\n";
+            result += "Rodne cislo: " + ((Person) value.getRecord()).getIdNumber() + ", datum narodenia: " + ((Person) value.getRecord()).getDateOfBirth() + "\n";
+            result += "Meno: " + ((Person) value.getRecord()).getName() + ", priezvisko: " + ((Person) value.getRecord()).getSurname() + "\n";
+            result += "Velkost: " + ((Person) value.getRecord()).getSize() + "\n";
+            result += "-------------------------------------------------------\n";
+        }
+        return result;
+    }
+    public String getAllRecordsRegionUnsorted(){
+        String result = "";
+        ArrayList<RecordWithAddress<Region>> listOfRecords = regionUnsortedFile.getAllRecordsFromFile();
+        for (RecordWithAddress value: listOfRecords){
+            result += "-------------------------------------------------------\n";
+            result += "Adresa: " + value.getAddress() + ", validita: " + ((Region) value.getRecord()).isValid() + "\n";
+            result += "Id: " + ((Region) value.getRecord()).getRegionId() + ", nazov: " + ((Region) value.getRecord()).getName() + "\n";
+            result += "Velkost: " + ((Region) value.getRecord()).getSize() + "\n";
+            result += "-------------------------------------------------------\n";
+        }
+        return result;
+    }
+
+    public String getAllRecordsDistrictUnsorted(){
+        String result = "";
+        ArrayList<RecordWithAddress<District>> listOfRecords = districtUnsortedFile.getAllRecordsFromFile();
+        for (RecordWithAddress value: listOfRecords){
+            result += "-------------------------------------------------------\n";
+            result += "Adresa: " + value.getAddress() + ", validita: " + ((District) value.getRecord()).isValid() + "\n";
+            result += "Id: " + ((District) value.getRecord()).getDistrictId() + ", nazov: " + ((District) value.getRecord()).getName() + "\n";
+            result += "Velkost: " + ((District) value.getRecord()).getSize() + "\n";
+            result += "-------------------------------------------------------\n";
+        }
+        return result;
+    }
+
+    public String getAllRecordsWorkplaceUnsorted(){
+        String result = "";
+        ArrayList<RecordWithAddress<Workplace>> listOfRecords = workplaceUnsortedFile.getAllRecordsFromFile();
+        for (RecordWithAddress value: listOfRecords){
+            result += "-------------------------------------------------------\n";
+            result += "Adresa: " + value.getAddress() + ", validita: " + ((Workplace) value.getRecord()).isValid() + "\n";
+            result += "Id: " + ((Workplace) value.getRecord()).getWorkplaceId() + "\n";
+            result += "Velkost: " + ((Workplace) value.getRecord()).getSize() + "\n";
+            result += "-------------------------------------------------------\n";
+        }
+        return result;
+    }
+    public String listAllPeopleAddressNodes(){
+        String result = "";
+        ArrayList<BST23Node> listOfNodes = treeOfPeople.getAllNodesFromFile();
+        for (BST23Node value: listOfNodes){
+            PersonKey key = ((PersonKey) value.get_data1());
+            Address address = ((Address) value.get_value1());
+            result += "-------------------------------------------------------\n";
+            result += "Node validita: " + value.isValid() + ", Adresa: " + value.get_address() + "\n";
+            result += "Kluc 1: " + key.getIdNumber() +", Validita: " + key.isValid() +"\n";
+            result += "Adresa 1 na osobu: " + address.getAddressInUnsortedFile() + "\n";
+            key = (PersonKey) value.get_data2();
+            address = (Address) value.get_value2();
+            result += "Kluc 2: " + key.getIdNumber() +", Validita: " + key.isValid() +"\n";
+            result += "Adresa 2 na osobu: " + address.getAddressInUnsortedFile() + "\n";
+            result += "-------------------------------------------------------\n";
+        }
+        return result;
+    }
+
+    public String listAllRegionAddressNodes(){
+        String result = "";
+        ArrayList<BST23Node> listOfNodes = treeOfRegions.getAllNodesFromFile();
+        for (BST23Node value: listOfNodes){
+            RegionKey key = ((RegionKey) value.get_data1());
+            Address address = ((Address) value.get_value1());
+            result += "-------------------------------------------------------\n";
+            result += "Node validita: " + value.isValid() + ", Adresa: " + value.get_address()+ "\n";
+            result += "Kluc 1: " + key.getRegionId() +", Validita: " + key.isValid() +"\n";
+            result += "Adresa 1 na kraj: " + address.getAddressInUnsortedFile() + "\n";
+            key = (RegionKey) value.get_data2();
+            address = (Address) value.get_value2();
+            result += "Kluc 2: " + key.getRegionId() +", Validita: " + key.isValid() +"\n";
+            result += "Adresa 2 na kraj: " + address.getAddressInUnsortedFile() + "\n";
+            result += "-------------------------------------------------------\n";
+        }
+        return result;
+    }
+
+    public String listAllDistrictsAddressNodes(){
+        String result = "";
+        ArrayList<BST23Node> listOfNodes = treeOfDistricts.getAllNodesFromFile();
+        for (BST23Node value: listOfNodes){
+            DistrictKey key = ((DistrictKey) value.get_data1());
+            Address address = ((Address) value.get_value1());
+            result += "-------------------------------------------------------\n";
+            result += "Node validita: " + value.isValid() + ", Adresa: " + value.get_address()+ "\n";
+            result += "Kluc 1: " + key.getDistrictId() +", Validita: " + key.isValid() +"\n";
+            result += "Adresa 1 na okres: " + address.getAddressInUnsortedFile() + "\n";
+            key = (DistrictKey) value.get_data2();
+            address = (Address) value.get_value2();
+            result += "Kluc 2: " + key.getDistrictId() +", Validita: " + key.isValid() +"\n";
+            result += "Adresa 2 na okres: " + address.getAddressInUnsortedFile() + "\n";
+            result += "-------------------------------------------------------\n";
+        }
+        return result;
+    }
+
+    public String listAllWorkplaceAddressNodes(){
+        String result = "";
+        ArrayList<BST23Node> listOfNodes = treeOfWorkplace.getAllNodesFromFile();
+        for (BST23Node value: listOfNodes){
+            WorkplaceKey key = ((WorkplaceKey) value.get_data1());
+            Address address = ((Address) value.get_value1());
+            result += "-------------------------------------------------------\n";
+            result += "Node validita: " + value.isValid() + ", Adresa: " + value.get_address()+ "\n";
+            result += "Kluc 1: " + key.getWorkplaceId() +", Validita: " + key.isValid() +"\n";
+            result += "Adresa 1 na pracovisko: " + address.getAddressInUnsortedFile() + "\n";
+            key = (WorkplaceKey) value.get_data2();
+            address = (Address) value.get_value2();
+            result += "Kluc 2: " + key.getWorkplaceId() +", Validita: " + key.isValid() +"\n";
+            result += "Adresa 2 na pracovisko: " + address.getAddressInUnsortedFile() + "\n";
+            result += "-------------------------------------------------------\n";
+        }
+        return result;
     }
 }
