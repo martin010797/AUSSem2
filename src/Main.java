@@ -1,6 +1,6 @@
 import javax.swing.*;
 
-import Tests.GeneratorOfData;
+//import Tests.GeneratorOfData;
 import Tests.TestKey;
 import Tests.TestingData;
 import forms.menu;
@@ -8,7 +8,7 @@ import forms.menu;
 public class Main {
 
     public static void main(String[] args) {
-        GeneratorOfData generator = new GeneratorOfData();
+        //GeneratorOfData generator = new GeneratorOfData();
         //generator.testInsert(100000);
         //generator.testDelete(100000);
         //generator.testRandomOperation(300000, 0.9);

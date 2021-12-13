@@ -708,13 +708,14 @@ public class BST23<T extends  Comparable<T> & IData, V extends IData> {
         if (parent == null){
             return null;
         }
-        //if (getNodeForAddress(parent.get_left1()) == node){
-        if (areNodesEqual(getNodeForAddress(parent.get_left1()),node)){
+        if (parent.get_left1() == node.get_address()){
+        //if (areNodesEqual(getNodeForAddress(parent.get_left1()),node)){
             //node pre ktoreho hladam brata je uplne lavym synom jeho otca
             if (getNodeForAddress(parent.get_right1()) != null){
                 return getNodeForAddress(parent.get_right1());
             }
-        }else if(areNodesEqual(getNodeForAddress(parent.get_right1()),node)){
+        }else if(parent.get_right1() == node.get_address()){
+        //}else if(areNodesEqual(getNodeForAddress(parent.get_right1()),node)){
             //node pre ktoreho hladam brata je pravym synom pre prvy prvok v node jeho otca
             if (getNodeForAddress(parent.get_right2()) == null){
                 //otec ma len dvoch synov
@@ -729,7 +730,8 @@ public class BST23<T extends  Comparable<T> & IData, V extends IData> {
                 }
             }
         }else if(getNodeForAddress(parent.get_right2()) != null &&
-                areNodesEqual(getNodeForAddress(parent.get_right2()),node)){
+                parent.get_right2() == node.get_address()){
+//                areNodesEqual(getNodeForAddress(parent.get_right2()),node)){
             //node pre ktoreho hladam brata je pravym synom pre druhy prvok v node jeho otca
             if (getNodeForAddress(parent.get_left2()) != null){
                 return getNodeForAddress(parent.get_left2());
@@ -875,7 +877,8 @@ public class BST23<T extends  Comparable<T> & IData, V extends IData> {
                         V maxValue = getMaxValue(leaf, pNode);
                         T middle = getMiddle(leaf, pNode);
                         V middleValue = getMiddleValue(leaf, pNode);
-                        if (areNodesEqual(leaf, getNodeForAddress(_root))){
+                        if (leaf.get_address() == _root){
+                        //if (areNodesEqual(leaf, getNodeForAddress(_root))){
                             //ked je node korenom
                             BST23Node newRoot = new BST23Node(middle, middleValue);
                             BST23Node newRightSon = new BST23Node(max, maxValue);
@@ -922,7 +925,8 @@ public class BST23<T extends  Comparable<T> & IData, V extends IData> {
                             BST23Node<T,V> leafParent = getNodeForAddress(leaf.get_parent());
                             if (!leafParent.isThreeNode()){
                                 //pokial je otec dvojvrchol
-                                if (areNodesEqual(getNodeForAddress(leafParent.get_left1()),leaf)){
+                                if (leafParent.get_left1() == leaf.get_address()){
+                                //if (areNodesEqual(getNodeForAddress(leafParent.get_left1()),leaf)){
                                     //ak je lavy potomok otca
                                     BST23Node newNode = new BST23Node(max, maxValue);
                                     newNode.set_parent(leaf.get_parent());
@@ -1006,7 +1010,8 @@ public class BST23<T extends  Comparable<T> & IData, V extends IData> {
                                 }
                             }else {
                                 //pokial je otec trojvrchol(doslo by k preteceniu)
-                                if(areNodesEqual(getNodeForAddress(leafParent.get_right2()),leaf)){
+                                if(leafParent.get_right2() == leaf.get_address()){
+                                //if(areNodesEqual(getNodeForAddress(leafParent.get_right2()),leaf)){
                                     //leaf je pravy potomok
                                     BST23Node newNode = new BST23Node(min, minValue);
                                     newNode.set_parent(leaf.get_parent());
@@ -1046,7 +1051,8 @@ public class BST23<T extends  Comparable<T> & IData, V extends IData> {
                                     leaf = getNodeForAddress(leaf.get_parent());
                                     pNode.set_data1(middle);
                                     pNode.set_value1(middleValue);
-                                }else if(areNodesEqual(getNodeForAddress(leafParent.get_right1()), leaf)){
+                                }else if(leafParent.get_right1() == leaf.get_address()){
+                                //}else if(areNodesEqual(getNodeForAddress(leafParent.get_right1()), leaf)){
                                     //leaf je v strede
                                     BST23Node newNode = new BST23Node(max, maxValue);
                                     newNode.set_parent(leaf.get_parent());
@@ -1128,7 +1134,7 @@ public class BST23<T extends  Comparable<T> & IData, V extends IData> {
         return false;
     }
 
-    private boolean areNodesEqual(BST23Node node1, BST23Node node2){
+    private boolean areNodesEqual(BST23Node<T,V> node1, BST23Node<T,V> node2){
         if (node1.get_left1() != node2.get_left1()){
             return false;
         }
@@ -1147,21 +1153,24 @@ public class BST23<T extends  Comparable<T> & IData, V extends IData> {
         if (node1.isThreeNode() != node2.isThreeNode()){
             return false;
         }
-        if ((node1.get_data1() != null) && (node2.get_data1() != null)){
+        //TODO
+        if ((node1.get_data1().isValid()) && (node2.get_data1().isValid())){
             if (node1.get_data1().compareTo(node2.get_data1()) != 0){
                 return false;
             }
         }else {
             return false;
         }
-        if ((node1.get_data2() != null) && (node2.get_data2() != null)){
+        //TODO
+        if ((node1.get_data2().isValid()) && (node2.get_data2().isValid())){
             if (node1.get_data2().compareTo(node2.get_data2()) != 0){
                 return false;
             }
         }else {
-            if (node1.get_data2() != null){
+            //TODO
+            if (node1.get_data2().isValid()){
                 return false;
-            }else if (node2.get_data2() != null){
+            }else if (node2.get_data2().isValid()){
                 return false;
             }
         }
@@ -1336,11 +1345,12 @@ public class BST23<T extends  Comparable<T> & IData, V extends IData> {
         if (_root == UNDEFINED){
             return null;
         }
-        BST23Node loadedRoot = getNodeForAddress(_root);
+        BST23Node<T,V> loadedRoot = getNodeForAddress(_root);
 
         if (loadedRoot == null ||
                 (pNode.get_data1().compareTo(loadedRoot.get_data1()) == 0) ||
-                ((loadedRoot.get_data2() != null) && (pNode.get_data1().compareTo(loadedRoot.get_data2()) == 0))){
+                //TODO get data nebude nikdy null. asi prerobit na kontorlu ci je validny
+                ((loadedRoot.get_data2().isValid()) && (pNode.get_data1().compareTo(loadedRoot.get_data2()) == 0))){
             if (loadedRoot.isValid()){
                 return loadedRoot;
             }else {

@@ -14,6 +14,8 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class PCRSystem {
+    private static final int UNDEFINED = -1;
+
     private BST23<PersonKey, Address> treeOfPeople;
     private BST23<DistrictKey, Address> treeOfDistricts;
     private BST23<RegionKey, Address> treeOfRegions;
@@ -56,12 +58,6 @@ public class PCRSystem {
                      int pNumberOfWorkplaces,
                      int pNumberOfPeople,
                      int pNumberOfTests){
-        generateDistrictsRegionsAndWorkplaces(
-                pNumberOfRegions,
-                pNumberOfDistricts,
-                pNumberOfWorkplaces,
-                pNumberOfPeople,
-                pNumberOfTests);
         treeOfPeople = new BST23<PersonKey, Address>(
                 "pcrSystemFiles/peopleAddress",
                 PersonKey.class,
@@ -84,6 +80,19 @@ public class PCRSystem {
         regionUnsortedFile = new UnsortedFile<>("pcrSystemFiles/regionUnsorted", Region.class);
         personUnsortedFile = new UnsortedFile<>("pcrSystemFiles/personUnsorted", Person.class);
         workplaceUnsortedFile = new UnsortedFile<>("pcrSystemFiles/workplaceUnsorted", Workplace.class);
+        generateDistrictsRegionsAndWorkplaces(
+                pNumberOfRegions,
+                pNumberOfDistricts,
+                pNumberOfWorkplaces,
+                pNumberOfPeople,
+                pNumberOfTests);
+    }
+
+    public void endWorkWithTrees(){
+        treeOfDistricts.endWorkWithFile();
+        treeOfWorkplace.endWorkWithFile();
+        treeOfRegions.endWorkWithFile();
+        treeOfPeople.endWorkWithFile();
     }
 
     public ResponseAndPCRTestId insertPCRTest(String personIdNumber,
@@ -101,7 +110,7 @@ public class PCRSystem {
                                               String pTestId){
         //overuje sa ci osoba pre dany system existuje. ak nie tak hod chybu
         PersonKey pKey = new PersonKey(personIdNumber);
-        PersonData pData = new PersonData(pKey,null);
+        PersonData pData = new PersonData(pKey,new Address(UNDEFINED));
         BST23Node<PersonKey,Address> testedPersonNode = treeOfPeople.find(pData);
         if (testedPersonNode == null){
             //osoba sa v systeme nenachadza
@@ -165,7 +174,7 @@ public class PCRSystem {
             person.getTreeOfTestsByDate().endWorkWithFile();
             //pre dany okres vlozi test
             DistrictKey dKey = new DistrictKey(districtId);
-            DistrictData dData = new DistrictData(dKey,null);
+            DistrictData dData = new DistrictData(dKey,new Address(UNDEFINED));
             BST23Node<DistrictKey,Address> testedDistrictNode = treeOfDistricts.find(dData);
             if(testedDistrictNode == null){
                 //vymaze sa test z osoby lebo sa nemoze vkladat do systemu pokial neexistuje okres
@@ -220,7 +229,7 @@ public class PCRSystem {
             }
             //pre dany kraj vlozi test
             RegionKey rKey = new RegionKey(regionId);
-            RegionData rData = new RegionData(rKey,null);
+            RegionData rData = new RegionData(rKey,new Address(UNDEFINED));
             BST23Node<RegionKey,Address> testedRegionNode = treeOfRegions.find(rData);
             if(testedRegionNode == null){
                 PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
@@ -308,7 +317,7 @@ public class PCRSystem {
             }
             //pre dane pracovisko vlozi test
             WorkplaceKey wKey = new WorkplaceKey(workplaceId);
-            WorkplaceData wData = new WorkplaceData(wKey,null);
+            WorkplaceData wData = new WorkplaceData(wKey,new Address(UNDEFINED));
             BST23Node<WorkplaceKey,Address> workplaceNode = treeOfWorkplace.find(wData);
             if(workplaceNode == null){
                 PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
@@ -446,7 +455,7 @@ public class PCRSystem {
     public ResponseType deletePerson(String personId){
         //najdenie osoby
         PersonKey personKey = new PersonKey(personId);
-        PersonData personData = new PersonData(personKey, null);
+        PersonData personData = new PersonData(personKey, new Address(UNDEFINED));
         BST23Node personNode = treeOfPeople.find(personData);
         if (personNode == null){
             return ResponseType.PERSON_DOESNT_EXIST;
@@ -519,7 +528,7 @@ public class PCRSystem {
         }catch (Exception exception){
             return ResponseType.INCORRECT_PCR_FORMAT;
         }
-        PCRData tData = new PCRData(tKey, null);
+        PCRData tData = new PCRData(tKey, new Address(UNDEFINED));
         //najdenie testu
         NodeWithKey firstNode = treeOfPeople.getFirst();
         BST23Node<PCRKey,Address> testResult;
@@ -730,7 +739,7 @@ public class PCRSystem {
     public PersonPCRResult findTestResultForPerson(String personId, String pcrId){
         //najdi osobu s danym rodnym cislom
         PersonKey pKey = new PersonKey(personId);
-        PersonData pData = new PersonData(pKey,null);
+        PersonData pData = new PersonData(pKey,new Address(UNDEFINED));
         BST23Node testedPersonNode = treeOfPeople.find(pData);
         if (testedPersonNode == null){
             //osoba sa v systeme nenachadza
@@ -753,7 +762,7 @@ public class PCRSystem {
                         ResponseType.PCR_DOESNT_EXIST,
                         person.getName() + " " + person.getSurname());
             }
-            PCRData tData = new PCRData(tKey, null);
+            PCRData tData = new PCRData(tKey, new Address(UNDEFINED));
             BST23Node testNode = person.getTreeOfTests().find(tData);
             if (testNode == null){
                 return new PersonPCRResult(
@@ -816,7 +825,7 @@ public class PCRSystem {
                     ResponseType.INCORRECT_PCR_FORMAT,
                     person.getName() + " " + person.getSurname());
         }
-        PCRData tData = new PCRData(tKey, null);
+        PCRData tData = new PCRData(tKey, new Address(UNDEFINED));
         BST23Node testNode = person.getTreeOfTests().find(tData);
         if (testNode == null){
             return new PersonPCRResult(
@@ -872,7 +881,7 @@ public class PCRSystem {
     public PersonPCRResult searchForTestsInWorkplace(int workplaceId, Date dateFrom, Date dateTo){
         String resultString = "";
         WorkplaceKey wKey = new WorkplaceKey(workplaceId);
-        WorkplaceData wData = new WorkplaceData(wKey,null);
+        WorkplaceData wData = new WorkplaceData(wKey,new Address(UNDEFINED));
         BST23Node workplaceNode = treeOfWorkplace.find(wData);
         if (workplaceNode == null){
             return new PersonPCRResult(ResponseType.WORKPLACE_DOESNT_EXIST,null);
@@ -881,9 +890,9 @@ public class PCRSystem {
                 return new PersonPCRResult(ResponseType.LOWER_FROM_DATE,null);
             }
             PCRKeyDate pKeyFrom = new PCRKeyDate(dateFrom);
-            PCRWorkplaceData pDataFrom = new PCRWorkplaceData(pKeyFrom,null);
+            PCRWorkplaceData pDataFrom = new PCRWorkplaceData(pKeyFrom,new Address(UNDEFINED));
             PCRKeyDate pKeyTo = new PCRKeyDate(dateTo);
-            PCRWorkplaceData pDataTo = new PCRWorkplaceData(pKeyTo,null);
+            PCRWorkplaceData pDataTo = new PCRWorkplaceData(pKeyTo,new Address(UNDEFINED));
             if (((WorkplaceKey) workplaceNode.get_data1()).getWorkplaceId() == workplaceId){
                 ArrayList<BST23Node> listOfFoundNodes;
                 Workplace workplace = workplaceUnsortedFile.find(((Address) workplaceNode.get_value1()).getAddressInUnsortedFile());
@@ -965,7 +974,7 @@ public class PCRSystem {
     public PersonPCRResult searchSickPeopleInRegion(int regionId, Date dateFrom, Date dateTo, boolean positivity){
         String resultString = "";
         RegionKey rKey = new RegionKey(regionId);
-        RegionData rData = new RegionData(rKey,null);
+        RegionData rData = new RegionData(rKey,new Address(UNDEFINED));
         BST23Node regionNode = treeOfRegions.find(rData);
         if (regionNode == null){
             return new PersonPCRResult(ResponseType.REGION_DOESNT_EXIST,null);
@@ -974,9 +983,9 @@ public class PCRSystem {
                 return new PersonPCRResult(ResponseType.LOWER_FROM_DATE,null);
             }
             PCRKeyRegion pKeyFrom = new PCRKeyRegion(positivity,dateFrom);
-            PCRRegionData pDataFrom = new PCRRegionData(pKeyFrom,null);
+            PCRRegionData pDataFrom = new PCRRegionData(pKeyFrom,new Address(UNDEFINED));
             PCRKeyRegion pKeyTo = new PCRKeyRegion(positivity,dateTo);
-            PCRRegionData pDataTo = new PCRRegionData(pKeyTo,null);
+            PCRRegionData pDataTo = new PCRRegionData(pKeyTo,new Address(UNDEFINED));
             if (((RegionKey) regionNode.get_data1()).getRegionId() == regionId){
                 ArrayList<BST23Node> listOfFoundNodes;
                 Region region = regionUnsortedFile.find(((Address) regionNode.get_value1()).getAddressInUnsortedFile());
@@ -1145,9 +1154,9 @@ public class PCRSystem {
 
     private int getNumberOfSickInRegion(Region region, Date dateFrom, Date dateTo){
         PCRKeyRegion pKeyFrom = new PCRKeyRegion(true,dateFrom);
-        PCRRegionData pDataFrom = new PCRRegionData(pKeyFrom,null);
+        PCRRegionData pDataFrom = new PCRRegionData(pKeyFrom,new Address(UNDEFINED));
         PCRKeyRegion pKeyTo = new PCRKeyRegion(true,dateTo);
-        PCRRegionData pDataTo = new PCRRegionData(pKeyTo,null);
+        PCRRegionData pDataTo = new PCRRegionData(pKeyTo,new Address(UNDEFINED));
         ArrayList<BST23Node> listOfFoundNodes = region.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
         return listOfFoundNodes.size();
     }
@@ -1238,7 +1247,7 @@ public class PCRSystem {
                     "---------------------------------\n";
         }else {
             District district = districtUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value2()).getAddressInUnsortedFile());
-            resultString += nextValue + ". " + ((District) pNodeWithKey.getNode().get_value2()).getName() + "\n" +
+            resultString += nextValue + ". " + district.getName() + "\n" +
                     "Pocet chorych = " +
                     ((DistrictSickCountKey) pNodeWithKey.getNode().get_data2()).getNumberOfSickPeople() + "\n" +
                     "---------------------------------\n";
@@ -1248,9 +1257,9 @@ public class PCRSystem {
 
     private int getNumberOfSickInDistrict(District district, Date dateFrom, Date dateTo){
         PCRKeyDistrict pKeyFrom = new PCRKeyDistrict(true,dateFrom);
-        PCRDistrictPositiveData pDataFrom = new PCRDistrictPositiveData(pKeyFrom,null);
+        PCRDistrictPositiveData pDataFrom = new PCRDistrictPositiveData(pKeyFrom,new Address(UNDEFINED));
         PCRKeyDistrict pKeyTo = new PCRKeyDistrict(true,dateTo);
-        PCRDistrictPositiveData pDataTo = new PCRDistrictPositiveData(pKeyTo,null);
+        PCRDistrictPositiveData pDataTo = new PCRDistrictPositiveData(pKeyTo,new Address(UNDEFINED));
         ArrayList<BST23Node> listOfFoundNodes = district.getTreeOfTestedPeople().intervalSearch(pDataFrom,pDataTo);
         return listOfFoundNodes.size();
     }
@@ -1258,7 +1267,7 @@ public class PCRSystem {
     public PersonPCRResult searchSickPeopleInDistrict(int districtId, Date dateFrom, Date dateTo, boolean positivity){
         String resultString = "";
         DistrictKey dKey = new DistrictKey(districtId);
-        DistrictData dData = new DistrictData(dKey,null);
+        DistrictData dData = new DistrictData(dKey,new Address(UNDEFINED));
         BST23Node districtNode = treeOfDistricts.find(dData);
         if (districtNode == null){
             return new PersonPCRResult(ResponseType.DISTRICT_DOESNT_EXIST,null);
@@ -1267,9 +1276,9 @@ public class PCRSystem {
                 return new PersonPCRResult(ResponseType.LOWER_FROM_DATE,null);
             }
             PCRKeyDistrict pKeyFrom = new PCRKeyDistrict(positivity,dateFrom);
-            PCRDistrictPositiveData pDataFrom = new PCRDistrictPositiveData(pKeyFrom,null);
+            PCRDistrictPositiveData pDataFrom = new PCRDistrictPositiveData(pKeyFrom,new Address(UNDEFINED));
             PCRKeyDistrict pKeyTo = new PCRKeyDistrict(positivity,dateTo);
-            PCRDistrictPositiveData pDataTo = new PCRDistrictPositiveData(pKeyTo,null);
+            PCRDistrictPositiveData pDataTo = new PCRDistrictPositiveData(pKeyTo,new Address(UNDEFINED));
             if (((DistrictKey) districtNode.get_data1()).getDistrictId() == districtId){
                 ArrayList<BST23Node> listOfFoundNodes;
                 District district = districtUnsortedFile.find(((Address) districtNode.get_value1()).getAddressInUnsortedFile());
@@ -1345,7 +1354,7 @@ public class PCRSystem {
     public ResultWIthNumberOfResults searchTestsInDistrict(int districtId, Date dateFrom, Date dateTo, boolean positivity){
         String resultString = "";
         DistrictKey dKey = new DistrictKey(districtId);
-        DistrictData dData = new DistrictData(dKey,null);
+        DistrictData dData = new DistrictData(dKey,new Address(UNDEFINED));
         BST23Node districtNode = treeOfDistricts.find(dData);
         if (districtNode == null){
             return new ResultWIthNumberOfResults(ResponseType.DISTRICT_DOESNT_EXIST,null, 0);
@@ -1354,9 +1363,9 @@ public class PCRSystem {
                 return new ResultWIthNumberOfResults(ResponseType.LOWER_FROM_DATE,null, 0);
             }
             PCRKeyDistrict pKeyFrom = new PCRKeyDistrict(positivity,dateFrom);
-            PCRDistrictPositiveData pDataFrom = new PCRDistrictPositiveData(pKeyFrom,null);
+            PCRDistrictPositiveData pDataFrom = new PCRDistrictPositiveData(pKeyFrom,new Address(UNDEFINED));
             PCRKeyDistrict pKeyTo = new PCRKeyDistrict(positivity,dateTo);
-            PCRDistrictPositiveData pDataTo = new PCRDistrictPositiveData(pKeyTo,null);
+            PCRDistrictPositiveData pDataTo = new PCRDistrictPositiveData(pKeyTo,new Address(UNDEFINED));
             if (((DistrictKey) districtNode.get_data1()).getDistrictId() == districtId){
                 ArrayList<BST23Node> listOfFoundNodes;
                 District district = districtUnsortedFile.find(((Address) districtNode.get_value1()).getAddressInUnsortedFile());
@@ -1438,7 +1447,7 @@ public class PCRSystem {
     public ResultWIthNumberOfResults searchTestsInRegion(int regionId, Date dateFrom, Date dateTo, boolean positivity){
         String resultString = "";
         RegionKey rKey = new RegionKey(regionId);
-        RegionData rData = new RegionData(rKey,null);
+        RegionData rData = new RegionData(rKey,new Address(UNDEFINED));
         BST23Node regionNode = treeOfRegions.find(rData);
         if (regionNode == null){
             return new ResultWIthNumberOfResults(ResponseType.REGION_DOESNT_EXIST,null,0);
@@ -1447,9 +1456,9 @@ public class PCRSystem {
                 return new ResultWIthNumberOfResults(ResponseType.LOWER_FROM_DATE,null,0);
             }
             PCRKeyRegion pKeyFrom = new PCRKeyRegion(positivity,dateFrom);
-            PCRRegionData pDataFrom = new PCRRegionData(pKeyFrom,null);
+            PCRRegionData pDataFrom = new PCRRegionData(pKeyFrom,new Address(UNDEFINED));
             PCRKeyRegion pKeyTo = new PCRKeyRegion(positivity,dateTo);
-            PCRRegionData pDataTo = new PCRRegionData(pKeyTo,null);
+            PCRRegionData pDataTo = new PCRRegionData(pKeyTo,new Address(UNDEFINED));
             if (((RegionKey) regionNode.get_data1()).getRegionId() == regionId){
                 ArrayList<BST23Node> listOfFoundNodes;
                 Region region = regionUnsortedFile.find(((Address) regionNode.get_value1()).getAddressInUnsortedFile());
@@ -1551,7 +1560,7 @@ public class PCRSystem {
         }
         return new ResultWIthNumberOfResults(ResponseType.SUCCESS, resultString, numberOfResults);
     }
-    
+
     public PersonPCRResult findPCRTestById(String PCRId){
         NodeWithKey firstNode = treeOfPeople.getFirst();
         PersonPCRResult result;
@@ -1614,9 +1623,9 @@ public class PCRSystem {
     private ResultWIthNumberOfResults getSickPeopleStringForRegion(NodeWithKey pNodeWithKey, Date dateFrom, Date dateTo){
         String resultString = "";
         PCRKeyRegion pKeyFrom = new PCRKeyRegion(true,dateFrom);
-        PCRRegionData pDataFrom = new PCRRegionData(pKeyFrom,null);
+        PCRRegionData pDataFrom = new PCRRegionData(pKeyFrom,new Address(UNDEFINED));
         PCRKeyRegion pKeyTo = new PCRKeyRegion(true,dateTo);
-        PCRRegionData pDataTo = new PCRRegionData(pKeyTo,null);
+        PCRRegionData pDataTo = new PCRRegionData(pKeyTo,new Address(UNDEFINED));
         if (((RegionKey) pNodeWithKey.getNode().get_data1()).getRegionId() == ((RegionKey) pNodeWithKey.getKey()).getRegionId()){
             ArrayList<BST23Node> listOfFoundNodes;
             Region region = regionUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value1()).getAddressInUnsortedFile());
@@ -1691,9 +1700,9 @@ public class PCRSystem {
     private ResultWIthNumberOfResults getTestsStringForRegion(NodeWithKey pNodeWithKey, Date dateFrom, Date dateTo, boolean positivity){
         String resultString = "";
         PCRKeyRegion pKeyFrom = new PCRKeyRegion(positivity,dateFrom);
-        PCRRegionData pDataFrom = new PCRRegionData(pKeyFrom,null);
+        PCRRegionData pDataFrom = new PCRRegionData(pKeyFrom,new Address(UNDEFINED));
         PCRKeyRegion pKeyTo = new PCRKeyRegion(positivity,dateTo);
-        PCRRegionData pDataTo = new PCRRegionData(pKeyTo,null);
+        PCRRegionData pDataTo = new PCRRegionData(pKeyTo,new Address(UNDEFINED));
         if (((RegionKey) pNodeWithKey.getNode().get_data1()).getRegionId() == ((RegionKey) pNodeWithKey.getKey()).getRegionId()){
             ArrayList<BST23Node> listOfFoundNodes;
             Region region = regionUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value1()).getAddressInUnsortedFile());
@@ -1731,7 +1740,7 @@ public class PCRSystem {
         }else {
             ArrayList<BST23Node> listOfFoundNodes;
             Region region = regionUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value2()).getAddressInUnsortedFile());
-            listOfFoundNodes = ((Region) pNodeWithKey.getNode().get_value2()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+            listOfFoundNodes = region.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
             for (int i = 0; i < listOfFoundNodes.size(); i++){
                 String res;
                 PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
@@ -1768,7 +1777,7 @@ public class PCRSystem {
     public PersonPCRResult searchTestsForPerson(String personId){
         String resultString = "";
         PersonKey pKey = new PersonKey(personId);
-        PersonData pData = new PersonData(pKey,null);
+        PersonData pData = new PersonData(pKey,new Address(UNDEFINED));
         BST23Node personNode = treeOfPeople.find(pData);
         if (personNode == null){
             return new PersonPCRResult(ResponseType.PERSON_DOESNT_EXIST,null);

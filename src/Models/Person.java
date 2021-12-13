@@ -217,8 +217,15 @@ public class Person implements IData<Person> {
             }else {
                 dateOfBirth = new Date(year,month, day, hour, minute, seconds);
             }
-
             isValid = hlpInStream.readBoolean();
+            treeOfTests = new BST23<PCRKey, Address>(
+                    "personFiles/tests"+idNumber,
+                    PCRKey.class,
+                    Address.class);
+            treeOfTestsByDate = new BST23<PCRKeyDate, Address>(
+                    "personFiles/testsDate"+idNumber,
+                    PCRKeyDate.class,
+                    Address.class);
         } catch (IOException e) {
             throw new IllegalStateException("Error during conversion from byte array.");
         }

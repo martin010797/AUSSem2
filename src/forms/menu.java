@@ -292,7 +292,7 @@ public class menu {
         saveDataButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                try {
+                /*try {
                     if (pcrSystem.saveDataToFile()){
                         JOptionPane.showMessageDialog(
                                 null,
@@ -306,7 +306,8 @@ public class menu {
                     JOptionPane.showMessageDialog(
                             null,
                             "Chyba pri praci so subormi.");
-                }
+                }*/
+                pcrSystem.endWorkWithTrees();
             }
         });
     }
