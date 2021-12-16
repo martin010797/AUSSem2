@@ -1,10 +1,7 @@
 package Structure;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.PriorityQueue;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -325,6 +322,39 @@ public class UnsortedFile<T extends IData> {
             return listOfRecords;
         }else {
             int next = HEADER_SIZE;
+            //nacitanie celeho suboru
+            byte[] arrayOfDataBytes;
+            try {
+                arrayOfDataBytes = new byte[nextAddress-1];
+                fileOfRecords.seek(0);
+                fileOfRecords.read(arrayOfDataBytes);
+            }catch (IOException exception){
+                return null;
+            }
+            while (next < nextAddress){
+                T data;
+                try {
+                    data = (T) classType.newInstance().createClass();
+                }catch (InstantiationException exception){
+                    Logger.getLogger(UnsortedFile.class.getName()).log(Level.SEVERE, null, exception);
+                    return null;
+                }catch (IllegalAccessException exception){
+                    Logger.getLogger(UnsortedFile.class.getName()).log(Level.SEVERE, null, exception);
+                    return null;
+                }
+
+                //kopirovanie casti nacitaneho suboru
+                byte[] partOfByteArray = Arrays.copyOfRange(
+                        arrayOfDataBytes,
+                        next,
+                        next + data.getSize());
+                data.FromByteArray(partOfByteArray);
+                //pridanie zaznamu
+                listOfRecords.add(new RecordWithAddress<T>(data,next));
+                next += data.getSize();
+            }
+            //stary sposob citania
+            /*int next = HEADER_SIZE;
             while (next < nextAddress){
                 T data;
                 try {
@@ -349,7 +379,7 @@ public class UnsortedFile<T extends IData> {
                 data.FromByteArray(arrayOfDataBytes);
                 listOfRecords.add(new RecordWithAddress<T>(data,next));
                 next += data.getSize();
-            }
+            }*/
             return listOfRecords;
         }
     }

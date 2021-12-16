@@ -82,7 +82,6 @@ public class BST23Node<T extends Comparable<T> & IData, V extends IData> impleme
         }
     }
 
-    //TODO mozno aj toto prerobit
     public BST23Node(T pData1){
         _data1 = pData1;
         _value1 = null;

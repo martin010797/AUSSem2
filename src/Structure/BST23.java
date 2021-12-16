@@ -1,10 +1,7 @@
 package Structure;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.PriorityQueue;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -1153,7 +1150,6 @@ public class BST23<T extends  Comparable<T> & IData, V extends IData> {
         if (node1.isThreeNode() != node2.isThreeNode()){
             return false;
         }
-        //TODO
         if ((node1.get_data1().isValid()) && (node2.get_data1().isValid())){
             if (node1.get_data1().compareTo(node2.get_data1()) != 0){
                 return false;
@@ -1161,13 +1157,11 @@ public class BST23<T extends  Comparable<T> & IData, V extends IData> {
         }else {
             return false;
         }
-        //TODO
         if ((node1.get_data2().isValid()) && (node2.get_data2().isValid())){
             if (node1.get_data2().compareTo(node2.get_data2()) != 0){
                 return false;
             }
         }else {
-            //TODO
             if (node1.get_data2().isValid()){
                 return false;
             }else if (node2.get_data2().isValid()){
@@ -1349,7 +1343,6 @@ public class BST23<T extends  Comparable<T> & IData, V extends IData> {
 
         if (loadedRoot == null ||
                 (pNode.get_data1().compareTo(loadedRoot.get_data1()) == 0) ||
-                //TODO get data nebude nikdy null. asi prerobit na kontorlu ci je validny
                 ((loadedRoot.get_data2().isValid()) && (pNode.get_data1().compareTo(loadedRoot.get_data2()) == 0))){
             if (loadedRoot.isValid()){
                 return loadedRoot;
@@ -1748,6 +1741,30 @@ public class BST23<T extends  Comparable<T> & IData, V extends IData> {
             return listOfNodes;
         }else {
             int next = HEADER_SIZE;
+            //nacitanie celeho suboru
+            byte[] arrayOfDataBytes;
+            try {
+                arrayOfDataBytes = new byte[nextAddress-1];
+                fileOfRecords.seek(0);
+                fileOfRecords.read(arrayOfDataBytes);
+            }catch (IOException exception){
+                return null;
+            }
+            while (next < nextAddress){
+                BST23Node node = new BST23Node(classTypeKey, classTypeValue);
+
+                //kopirovanie casti nacitaneho suboru
+                byte[] partOfByteArray = Arrays.copyOfRange(
+                        arrayOfDataBytes,
+                        next,
+                        next + node.getSize());
+                node.FromByteArray(partOfByteArray);
+                //pridanie zaznamu
+                listOfNodes.add(node);
+                next += node.getSize();
+            }
+
+            /*int next = HEADER_SIZE;
             while (next < nextAddress){
                 BST23Node node = new BST23Node(classTypeKey, classTypeValue);
                 //nacitanie pola bytov zo suboru
@@ -1762,7 +1779,7 @@ public class BST23<T extends  Comparable<T> & IData, V extends IData> {
                 node.FromByteArray(arrayOfDataBytes);
                 listOfNodes.add(node);
                 next += node.getSize();
-            }
+            }*/
             return listOfNodes;
         }
     }
