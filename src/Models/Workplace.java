@@ -79,10 +79,12 @@ public class Workplace implements IData<Workplace> {
         try {
             workplaceId = hlpInStream.readInt();
             isValid = hlpInStream.readBoolean();
-            treeOfTests = new BST23<PCRKeyDate, Address>(
-                    "workplaceFiles/tests"+workplaceId,
-                    PCRKeyDate.class,
-                    Address.class);
+            if (workplaceId != UNDEFINED){
+                treeOfTests = new BST23<PCRKeyDate, Address>(
+                        "workplaceFiles/tests"+workplaceId,
+                        PCRKeyDate.class,
+                        Address.class);
+            }
         } catch (IOException e) {
             throw new IllegalStateException("Error during conversion from byte array.");
         }

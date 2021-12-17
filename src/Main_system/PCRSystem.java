@@ -2,6 +2,8 @@ package Main_system;
 
 import Models.*;
 import Structure.*;
+import Structure.Old2_3Tree.BST23_old;
+import Structure.Old2_3Tree.NodeWithKey_old;
 import Tests.TestingData;
 
 import java.io.*;
@@ -13,41 +15,33 @@ import java.util.concurrent.ThreadLocalRandom;
 public class PCRSystem {
     private static final int UNDEFINED = -1;
 
-    private BST23<PersonKey, Address> treeOfPeople;
-    private BST23<DistrictKey, Address> treeOfDistricts;
-    private BST23<RegionKey, Address> treeOfRegions;
-    private BST23<WorkplaceKey, Address> treeOfWorkplace;
+    private BST23<PersonKey, Person> treeOfPeople;
+    private BST23<DistrictKey, District> treeOfDistricts;
+    private BST23<RegionKey, Region> treeOfRegions;
+    private BST23<WorkplaceKey, Workplace> treeOfWorkplace;
 
-    //unserted files kvoli vyhnutiu sa duplicite
+    //unserted file kvoli vyhnutiu sa duplicite
     UnsortedFile<PCR> pcrUnsortedFile;
-    UnsortedFile<District> districtUnsortedFile;
-    UnsortedFile<Region> regionUnsortedFile;
-    UnsortedFile<Person> personUnsortedFile;
-    UnsortedFile<Workplace> workplaceUnsortedFile;
 
     public PCRSystem() {
-        treeOfPeople = new BST23<PersonKey, Address>(
+        treeOfPeople = new BST23<PersonKey, Person>(
                 "pcrSystemFiles/peopleAddress",
                 PersonKey.class,
-                Address.class);
-        treeOfDistricts = new BST23<DistrictKey, Address>(
+                Person.class);
+        treeOfDistricts = new BST23<DistrictKey, District>(
                 "pcrSystemFiles/districtAddress",
                 DistrictKey.class,
-                Address.class);
-        treeOfRegions = new BST23<RegionKey, Address>(
+                District.class);
+        treeOfRegions = new BST23<RegionKey, Region>(
                 "pcrSystemFiles/regionAddress",
                 RegionKey.class,
-                Address.class);
-        treeOfWorkplace = new BST23<WorkplaceKey, Address>(
+                Region.class);
+        treeOfWorkplace = new BST23<WorkplaceKey, Workplace>(
                 "pcrSystemFiles/workplaceAddress",
                 WorkplaceKey.class,
-                Address.class);
+                Workplace.class);
 
         pcrUnsortedFile = new UnsortedFile<>("pcrSystemFiles/pcrUnsorted", PCR.class);
-        districtUnsortedFile = new UnsortedFile<>("pcrSystemFiles/districtUnsorted", District.class);
-        regionUnsortedFile = new UnsortedFile<>("pcrSystemFiles/regionUnsorted", Region.class);
-        personUnsortedFile = new UnsortedFile<>("pcrSystemFiles/personUnsorted", Person.class);
-        workplaceUnsortedFile = new UnsortedFile<>("pcrSystemFiles/workplaceUnsorted", Workplace.class);
     }
 
     public PCRSystem(int pNumberOfRegions,
@@ -55,28 +49,24 @@ public class PCRSystem {
                      int pNumberOfWorkplaces,
                      int pNumberOfPeople,
                      int pNumberOfTests){
-        treeOfPeople = new BST23<PersonKey, Address>(
+        treeOfPeople = new BST23<PersonKey, Person>(
                 "pcrSystemFiles/peopleAddress",
                 PersonKey.class,
-                Address.class);
-        treeOfDistricts = new BST23<DistrictKey, Address>(
+                Person.class);
+        treeOfDistricts = new BST23<DistrictKey, District>(
                 "pcrSystemFiles/districtAddress",
                 DistrictKey.class,
-                Address.class);
-        treeOfRegions = new BST23<RegionKey, Address>(
+                District.class);
+        treeOfRegions = new BST23<RegionKey, Region>(
                 "pcrSystemFiles/regionAddress",
                 RegionKey.class,
-                Address.class);
-        treeOfWorkplace = new BST23<WorkplaceKey, Address>(
+                Region.class);
+        treeOfWorkplace = new BST23<WorkplaceKey, Workplace>(
                 "pcrSystemFiles/workplaceAddress",
                 WorkplaceKey.class,
-                Address.class);
+                Workplace.class);
 
         pcrUnsortedFile = new UnsortedFile<>("pcrSystemFiles/pcrUnsorted", PCR.class);
-        districtUnsortedFile = new UnsortedFile<>("pcrSystemFiles/districtUnsorted", District.class);
-        regionUnsortedFile = new UnsortedFile<>("pcrSystemFiles/regionUnsorted", Region.class);
-        personUnsortedFile = new UnsortedFile<>("pcrSystemFiles/personUnsorted", Person.class);
-        workplaceUnsortedFile = new UnsortedFile<>("pcrSystemFiles/workplaceUnsorted", Workplace.class);
         generateDistrictsRegionsAndWorkplaces(
                 pNumberOfRegions,
                 pNumberOfDistricts,
@@ -94,10 +84,6 @@ public class PCRSystem {
 
     public void endWorkWithUnsortedFiles(){
         pcrUnsortedFile.endWorkWithFile();
-        personUnsortedFile.endWorkWithFile();
-        workplaceUnsortedFile.endWorkWithFile();
-        regionUnsortedFile.endWorkWithFile();
-        districtUnsortedFile.endWorkWithFile();
     }
 
     public ResponseAndPCRTestId insertPCRTest(String personIdNumber,
@@ -115,27 +101,28 @@ public class PCRSystem {
                                               String pTestId){
         //overuje sa ci osoba pre dany system existuje. ak nie tak hod chybu
         PersonKey pKey = new PersonKey(personIdNumber);
-        PersonData pData = new PersonData(pKey,new Address(UNDEFINED));
-        BST23Node<PersonKey,Address> testedPersonNode = treeOfPeople.find(pData);
+        PersonData pData = new PersonData(pKey,new Person());
+        BST23Node<PersonKey,Person> testedPersonNode = treeOfPeople.find(pData);
         if (testedPersonNode == null){
             //osoba sa v systeme nenachadza
             return new ResponseAndPCRTestId(ResponseType.PERSON_DOESNT_EXIST,null);
         }else {
             //vytvorenie testu
             Person person;
+            PersonKey personKey;
             int personAddress;
-            District district;
+            //District district;
             int districtAddress = -1;
-            Region region;
+            //Region region;
             int regionAddress = -1;
-            Workplace workplace;
+            //Workplace workplace;
             int workplaceAddress = -1;
             if (((PersonKey) testedPersonNode.get_data1()).getIdNumber().equals(personIdNumber)){
-                personAddress = testedPersonNode.get_value1().getAddressInUnsortedFile();
-                person = personUnsortedFile.find(personAddress);
+                person = testedPersonNode.get_value1();
+                personKey = testedPersonNode.get_data1();
             }else{
-                personAddress = testedPersonNode.get_value2().getAddressInUnsortedFile();
-                person = personUnsortedFile.find(personAddress);
+                person = testedPersonNode.get_value2();
+                personKey = testedPersonNode.get_data2();
             }
             PCR testValue = new PCR(
                     yearOfTest,
@@ -150,7 +137,7 @@ public class PCRSystem {
                     regionId,
                     result,
                     description,
-                    personAddress,
+                    personKey,
                     pTestId);
             //vlozenie testu do unsorted file
             int pcrAddress = pcrUnsortedFile.insert(testValue);
@@ -163,7 +150,6 @@ public class PCRSystem {
                 pcrUnsortedFile.delete(pcrAddress);
                 return new ResponseAndPCRTestId(ResponseType.PCR_WITH_ID_EXISTS,testValue.getPCRId().toString());
             }
-            person.getTreeOfTests().endWorkWithFile();
             //vlozenie testu do stromov v osobe podla datumu
             PCRKeyDate pKeyDate = new PCRKeyDate(testValue.getDateAndTimeOfTest());
             PCRWorkplaceData pDateData = new PCRWorkplaceData(pKeyDate,pcrAddressRecord);
@@ -176,11 +162,10 @@ public class PCRSystem {
                 pcrUnsortedFile.delete(pcrAddress);
                 return new ResponseAndPCRTestId(ResponseType.PCR_EXISTS_FOR_THAT_TIME, testValue.getPCRId().toString());
             }
-            person.getTreeOfTestsByDate().endWorkWithFile();
             //pre dany okres vlozi test
             DistrictKey dKey = new DistrictKey(districtId);
-            DistrictData dData = new DistrictData(dKey,new Address(UNDEFINED));
-            BST23Node<DistrictKey,Address> testedDistrictNode = treeOfDistricts.find(dData);
+            DistrictData dData = new DistrictData(dKey,new District());
+            BST23Node<DistrictKey,District> testedDistrictNode = treeOfDistricts.find(dData);
             if(testedDistrictNode == null){
                 //vymaze sa test z osoby lebo sa nemoze vkladat do systemu pokial neexistuje okres
                 PCRData deletedPersonTestData = new PCRData(testKey, pcrAddressRecord);
@@ -197,10 +182,8 @@ public class PCRSystem {
                 PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
                 PCRDistrictPositiveData districtTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
                 if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId){
-                    testValue.setDistrict(testedDistrictNode.get_value1().getAddressInUnsortedFile());
-                    districtAddress = testedDistrictNode.get_value1().getAddressInUnsortedFile();
-                    district = districtUnsortedFile.find(districtAddress);
-                    if(!district.insertTest(districtTestData)){
+                    testValue.setDistrict(testedDistrictNode.get_data1());
+                    if(!testedDistrictNode.get_value1().insertTest(districtTestData)){
                         PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
                         PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,pcrAddressRecord);
                         person.deletePCRTestByDate(deletedPersonDateTestData);
@@ -212,12 +195,10 @@ public class PCRSystem {
                         person.getTreeOfTestsByDate().endWorkWithFile();
                         return new ResponseAndPCRTestId(ResponseType.PCR_WITH_ID_EXISTS,testValue.getPCRId().toString());
                     }
-                    district.getTreeOfTestedPeople().endWorkWithFile();
+                    testedDistrictNode.get_value1().getTreeOfTestedPeople().endWorkWithFile();
                 }else {
-                    testValue.setDistrict(testedDistrictNode.get_value2().getAddressInUnsortedFile());
-                    districtAddress = testedDistrictNode.get_value2().getAddressInUnsortedFile();
-                    district = districtUnsortedFile.find(districtAddress);
-                    if (!district.insertTest(districtTestData)){
+                    testValue.setDistrict(testedDistrictNode.get_data2());
+                    if (!testedDistrictNode.get_value2().insertTest(districtTestData)){
                         PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
                         PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,pcrAddressRecord);
                         person.deletePCRTestByDate(deletedPersonDateTestData);
@@ -229,22 +210,22 @@ public class PCRSystem {
                         person.getTreeOfTestsByDate().endWorkWithFile();
                         return new ResponseAndPCRTestId(ResponseType.PCR_WITH_ID_EXISTS,testValue.getPCRId().toString());
                     }
-                    district.getTreeOfTestedPeople().endWorkWithFile();
+                    testedDistrictNode.get_value2().getTreeOfTestedPeople().endWorkWithFile();
                 }
             }
             //pre dany kraj vlozi test
             RegionKey rKey = new RegionKey(regionId);
-            RegionData rData = new RegionData(rKey,new Address(UNDEFINED));
-            BST23Node<RegionKey,Address> testedRegionNode = treeOfRegions.find(rData);
+            RegionData rData = new RegionData(rKey,new Region());
+            BST23Node<RegionKey,Region> testedRegionNode = treeOfRegions.find(rData);
             if(testedRegionNode == null){
                 PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
                 //mazania kvoli tomu aby neostali data ked sa nemoze vkladat
                 if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
                     PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
-                    district.deletePCRTest(deletedDistrictTestData);
+                    testedDistrictNode.get_value1().deletePCRTest(deletedDistrictTestData);
                 }else {
                     PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
-                    district.deletePCRTest(deletedDistrictTestData);
+                    testedDistrictNode.get_value2().deletePCRTest(deletedDistrictTestData);
                 }
                 PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
                 PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,pcrAddressRecord);
@@ -255,24 +236,26 @@ public class PCRSystem {
                 pcrUnsortedFile.delete(pcrAddress);
                 person.getTreeOfTests().endWorkWithFile();
                 person.getTreeOfTestsByDate().endWorkWithFile();
-                district.getTreeOfTestedPeople().endWorkWithFile();
+                if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
+                    testedDistrictNode.get_value1().getTreeOfTestedPeople().endWorkWithFile();
+                }else {
+                    testedDistrictNode.get_value2().getTreeOfTestedPeople().endWorkWithFile();
+                }
                 return new ResponseAndPCRTestId(ResponseType.REGION_DOESNT_EXIST, testValue.getPCRId().toString());
             }else {
                 PCRKeyRegion pcrKeyRegion = new PCRKeyRegion(testValue.isResult(),testValue.getDateAndTimeOfTest());
                 PCRRegionData regionTestData = new PCRRegionData(pcrKeyRegion,pcrAddressRecord);
                 if (((RegionKey) testedRegionNode.get_data1()).getRegionId() == regionId){
-                    testValue.setRegion(testedRegionNode.get_value1().getAddressInUnsortedFile());
-                    regionAddress = testedRegionNode.get_value1().getAddressInUnsortedFile();
-                    region = regionUnsortedFile.find(regionAddress);
-                    if (!region.insertTest(regionTestData)){
+                    testValue.setRegion(testedRegionNode.get_data1());
+                    if (!testedRegionNode.get_value1().insertTest(regionTestData)){
                         PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
                         //mazania kvoli tomu aby neostali data ked sa nemoze vkladat
                         if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
                             PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
-                            district.deletePCRTest(deletedDistrictTestData);
+                            testedDistrictNode.get_value1().deletePCRTest(deletedDistrictTestData);
                         }else {
                             PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
-                            district.deletePCRTest(deletedDistrictTestData);
+                            testedDistrictNode.get_value2().deletePCRTest(deletedDistrictTestData);
                         }
                         PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
                         PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,pcrAddressRecord);
@@ -283,25 +266,27 @@ public class PCRSystem {
                         pcrUnsortedFile.delete(pcrAddress);
                         person.getTreeOfTests().endWorkWithFile();
                         person.getTreeOfTestsByDate().endWorkWithFile();
-                        district.getTreeOfTestedPeople().endWorkWithFile();
+                        if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
+                            testedDistrictNode.get_value1().getTreeOfTestedPeople().endWorkWithFile();
+                        }else {
+                            testedDistrictNode.get_value2().getTreeOfTestedPeople().endWorkWithFile();
+                        }
                         return new ResponseAndPCRTestId(
                                 ResponseType.PCR_WITH_ID_EXISTS,
                                 testValue.getPCRId().toString());
                     }
-                    region.getTreeOfTests().endWorkWithFile();
+                    testedRegionNode.get_value1().getTreeOfTests().endWorkWithFile();
                 }else {
-                    testValue.setRegion(testedRegionNode.get_value2().getAddressInUnsortedFile());
-                    regionAddress = testedRegionNode.get_value2().getAddressInUnsortedFile();
-                    region = regionUnsortedFile.find(regionAddress);
-                    if (!region.insertTest(regionTestData)){
+                    testValue.setRegion(testedRegionNode.get_data2());
+                    if (!testedRegionNode.get_value2().insertTest(regionTestData)){
                         PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
                         //mazania kvoli tomu aby neostali data ked sa nemoze vkladat
                         if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
                             PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
-                            district.deletePCRTest(deletedDistrictTestData);
+                            testedDistrictNode.get_value1().deletePCRTest(deletedDistrictTestData);
                         }else {
                             PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
-                            district.deletePCRTest(deletedDistrictTestData);
+                            testedDistrictNode.get_value2().deletePCRTest(deletedDistrictTestData);
                         }
                         PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
                         PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,pcrAddressRecord);
@@ -312,35 +297,40 @@ public class PCRSystem {
                         pcrUnsortedFile.delete(pcrAddress);
                         person.getTreeOfTests().endWorkWithFile();
                         person.getTreeOfTestsByDate().endWorkWithFile();
-                        district.getTreeOfTestedPeople().endWorkWithFile();
+                        if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
+                            testedDistrictNode.get_value1().getTreeOfTestedPeople().endWorkWithFile();
+                        }else {
+                            testedDistrictNode.get_value2().getTreeOfTestedPeople().endWorkWithFile();
+                        }
+                        //district.getTreeOfTestedPeople().endWorkWithFile();
                         return new ResponseAndPCRTestId(
                                 ResponseType.PCR_WITH_ID_EXISTS,
                                 testValue.getPCRId().toString());
                     }
-                    region.getTreeOfTests().endWorkWithFile();
+                    testedRegionNode.get_value2().getTreeOfTests().endWorkWithFile();
                 }
             }
             //pre dane pracovisko vlozi test
             WorkplaceKey wKey = new WorkplaceKey(workplaceId);
-            WorkplaceData wData = new WorkplaceData(wKey,new Address(UNDEFINED));
-            BST23Node<WorkplaceKey,Address> workplaceNode = treeOfWorkplace.find(wData);
+            WorkplaceData wData = new WorkplaceData(wKey,new Workplace());
+            BST23Node<WorkplaceKey,Workplace> workplaceNode = treeOfWorkplace.find(wData);
             if(workplaceNode == null){
                 PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
                 PCRKeyRegion regionPCRKey = new PCRKeyRegion(testValue.isResult(),testValue.getDateAndTimeOfTest());
                 //mazania kvoli tomu aby neostali data ked sa nemoze vkladat
                 if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
                     PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
-                    district.deletePCRTest(deletedDistrictTestData);
+                    testedDistrictNode.get_value1().deletePCRTest(deletedDistrictTestData);
                 }else {
                     PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
-                    district.deletePCRTest(deletedDistrictTestData);
+                    testedDistrictNode.get_value2().deletePCRTest(deletedDistrictTestData);
                 }
                 if (((RegionKey) testedRegionNode.get_data1()).getRegionId() == regionId){
                     PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, pcrAddressRecord);
-                    region.deletePCRTest(deletedRegionTestData);
+                    testedRegionNode.get_value1().deletePCRTest(deletedRegionTestData);
                 }else {
                     PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, pcrAddressRecord);
-                    region.deletePCRTest(deletedRegionTestData);
+                    testedRegionNode.get_value2().deletePCRTest(deletedRegionTestData);
                 }
                 PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
                 PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,pcrAddressRecord);
@@ -351,8 +341,16 @@ public class PCRSystem {
                 pcrUnsortedFile.delete(pcrAddress);
                 person.getTreeOfTests().endWorkWithFile();
                 person.getTreeOfTestsByDate().endWorkWithFile();
-                district.getTreeOfTestedPeople().endWorkWithFile();
-                region.getTreeOfTests().endWorkWithFile();
+                if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
+                    testedDistrictNode.get_value1().getTreeOfTestedPeople().endWorkWithFile();
+                }else {
+                    testedDistrictNode.get_value2().getTreeOfTestedPeople().endWorkWithFile();
+                }
+                if (((RegionKey) testedRegionNode.get_data1()).getRegionId() == regionId){
+                    testedRegionNode.get_value1().getTreeOfTests().endWorkWithFile();
+                }else {
+                    testedRegionNode.get_value2().getTreeOfTests().endWorkWithFile();
+                }
                 return new ResponseAndPCRTestId(
                         ResponseType.WORKPLACE_DOESNT_EXIST,
                         testValue.getPCRId().toString());
@@ -360,26 +358,24 @@ public class PCRSystem {
                 PCRKeyDate testWorkplaceKey = new PCRKeyDate(testValue.getDateAndTimeOfTest());
                 PCRWorkplaceData workplaceTestData = new PCRWorkplaceData(testWorkplaceKey, pcrAddressRecord);
                 if (((WorkplaceKey) workplaceNode.get_data1()).getWorkplaceId() == workplaceId){
-                    testValue.setWorkplace(workplaceNode.get_value1().getAddressInUnsortedFile());
-                    workplaceAddress = workplaceNode.get_value1().getAddressInUnsortedFile();
-                    workplace = workplaceUnsortedFile.find(workplaceAddress);
-                    if (!workplace.insertTest(workplaceTestData)){
+                    testValue.setWorkplace(workplaceNode.get_data1());
+                    if (!workplaceNode.get_value1().insertTest(workplaceTestData)){
                         PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
                         PCRKeyRegion regionPCRKey = new PCRKeyRegion(testValue.isResult(),testValue.getDateAndTimeOfTest());
                         //mazania kvoli tomu aby neostali data ked sa nemoze vkladat
                         if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
                             PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
-                            district.deletePCRTest(deletedDistrictTestData);
+                            testedDistrictNode.get_value1().deletePCRTest(deletedDistrictTestData);
                         }else {
                             PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
-                            district.deletePCRTest(deletedDistrictTestData);
+                            testedDistrictNode.get_value2().deletePCRTest(deletedDistrictTestData);
                         }
                         if (((RegionKey) testedRegionNode.get_data1()).getRegionId() == regionId){
                             PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, pcrAddressRecord);
-                            region.deletePCRTest(deletedRegionTestData);
+                            testedRegionNode.get_value1().deletePCRTest(deletedRegionTestData);
                         }else {
                             PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, pcrAddressRecord);
-                            region.deletePCRTest(deletedRegionTestData);
+                            testedRegionNode.get_value2().deletePCRTest(deletedRegionTestData);
                         }
                         PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
                         PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,pcrAddressRecord);
@@ -390,34 +386,40 @@ public class PCRSystem {
                         pcrUnsortedFile.delete(pcrAddress);
                         person.getTreeOfTests().endWorkWithFile();
                         person.getTreeOfTestsByDate().endWorkWithFile();
-                        district.getTreeOfTestedPeople().endWorkWithFile();
-                        region.getTreeOfTests().endWorkWithFile();
+                        if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
+                            testedDistrictNode.get_value1().getTreeOfTestedPeople().endWorkWithFile();
+                        }else {
+                            testedDistrictNode.get_value2().getTreeOfTestedPeople().endWorkWithFile();
+                        }
+                        if (((RegionKey) testedRegionNode.get_data1()).getRegionId() == regionId){
+                            testedRegionNode.get_value1().getTreeOfTests().endWorkWithFile();
+                        }else {
+                            testedRegionNode.get_value2().getTreeOfTests().endWorkWithFile();
+                        }
                         return new ResponseAndPCRTestId(
                                 ResponseType.PCR_EXISTS_FOR_THAT_TIME,
                                 testValue.getPCRId().toString());
                     }
-                    workplace.getTreeOfTests().endWorkWithFile();
+                    workplaceNode.get_value1().getTreeOfTests().endWorkWithFile();
                 }else {
-                    testValue.setWorkplace(workplaceNode.get_value2().getAddressInUnsortedFile());
-                    workplaceAddress = workplaceNode.get_value2().getAddressInUnsortedFile();
-                    workplace = workplaceUnsortedFile.find(workplaceAddress);
-                    if (!workplace.insertTest(workplaceTestData)){
+                    testValue.setWorkplace(workplaceNode.get_data2());
+                    if (!workplaceNode.get_value2().insertTest(workplaceTestData)){
                         PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
                         PCRKeyRegion regionPCRKey = new PCRKeyRegion(testValue.isResult(),testValue.getDateAndTimeOfTest());
                         //mazania kvoli tomu aby neostali data ked sa nemoze vkladat
                         if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
                             PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
-                            district.deletePCRTest(deletedDistrictTestData);
+                            testedDistrictNode.get_value1().deletePCRTest(deletedDistrictTestData);
                         }else {
                             PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, pcrAddressRecord);
-                            district.deletePCRTest(deletedDistrictTestData);
+                            testedDistrictNode.get_value2().deletePCRTest(deletedDistrictTestData);
                         }
                         if (((RegionKey) testedRegionNode.get_data1()).getRegionId() == regionId){
                             PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, pcrAddressRecord);
-                            region.deletePCRTest(deletedRegionTestData);
+                            testedRegionNode.get_value1().deletePCRTest(deletedRegionTestData);
                         }else {
                             PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, pcrAddressRecord);
-                            region.deletePCRTest(deletedRegionTestData);
+                            testedRegionNode.get_value2().deletePCRTest(deletedRegionTestData);
                         }
                         PCRKeyDate pKeyDateDeleted = new PCRKeyDate(testValue.getDateAndTimeOfTest());
                         PCRWorkplaceData deletedPersonDateTestData = new PCRWorkplaceData(pKeyDateDeleted,pcrAddressRecord);
@@ -428,51 +430,52 @@ public class PCRSystem {
                         pcrUnsortedFile.delete(pcrAddress);
                         person.getTreeOfTests().endWorkWithFile();
                         person.getTreeOfTestsByDate().endWorkWithFile();
-                        district.getTreeOfTestedPeople().endWorkWithFile();
-                        region.getTreeOfTests().endWorkWithFile();
+                        if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == districtId) {
+                            testedDistrictNode.get_value1().getTreeOfTestedPeople().endWorkWithFile();
+                        }else {
+                            testedDistrictNode.get_value2().getTreeOfTestedPeople().endWorkWithFile();
+                        }
+                        //district.getTreeOfTestedPeople().endWorkWithFile();
+                        if (((RegionKey) testedRegionNode.get_data1()).getRegionId() == regionId){
+                            testedRegionNode.get_value1().getTreeOfTests().endWorkWithFile();
+                        }else {
+                            testedRegionNode.get_value2().getTreeOfTests().endWorkWithFile();
+                        }
+                        //region.getTreeOfTests().endWorkWithFile();
                         return new ResponseAndPCRTestId(
                                 ResponseType.PCR_EXISTS_FOR_THAT_TIME,
                                 testValue.getPCRId().toString());
                     }
-                    workplace.getTreeOfTests().endWorkWithFile();
+                    workplaceNode.get_value2().getTreeOfTests().endWorkWithFile();
                 }
             }
             pcrUnsortedFile.updateOnAddress(testValue,pcrAddress);
+            person.getTreeOfTests().endWorkWithFile();
+            person.getTreeOfTestsByDate().endWorkWithFile();
             return new ResponseAndPCRTestId(ResponseType.SUCCESS,testValue.getPCRId().toString());
         }
     }
 
     public boolean insertPerson(String name, String surname, int year, int month, int day, String idNumber){
-        //vlozenie osoby do unsorted filu
-        int addressOfPerson = personUnsortedFile.insert(new Person(name,surname,year,month,day,idNumber));
-        if (addressOfPerson == -1){
-            return false;
-        }
-        //ak sa podarilo vlozit do unsorted filu tak do stromu uklada adresu na neho
         PersonKey pKey = new PersonKey(idNumber);
-        Address address = new Address(addressOfPerson);
-        //Person pValue = new Person(name,surname,year,month,day,idNumber);
-        //PersonData pData = new PersonData(pKey,pValue);
-        PersonData pData = new PersonData(pKey,address);
+        Person pValue = new Person(name,surname,year,month,day,idNumber);
+        PersonData pData = new PersonData(pKey,pValue);
         return treeOfPeople.insert(pData);
     }
 
     public ResponseType deletePerson(String personId){
         //najdenie osoby
         PersonKey personKey = new PersonKey(personId);
-        PersonData personData = new PersonData(personKey, new Address(UNDEFINED));
+        PersonData personData = new PersonData(personKey, new Person());
         BST23Node personNode = treeOfPeople.find(personData);
         if (personNode == null){
             return ResponseType.PERSON_DOESNT_EXIST;
         }
         Person person;
-        int personAddress = -1;
         if(((PersonKey) personNode.get_data1()).getIdNumber().equals(personId)){
-            personAddress = ((Address) personNode.get_value1()).getAddressInUnsortedFile();
-            person = personUnsortedFile.find(personAddress);
+            person = ((Person) personNode.get_value1());
         }else {
-            personAddress = ((Address) personNode.get_value2()).getAddressInUnsortedFile();
-            person = personUnsortedFile.find(personAddress);
+            person = ((Person) personNode.get_value2());
         }
 
         //prechadzanie vsetkych testov a ich mazanie
@@ -503,7 +506,7 @@ public class PCRSystem {
             }
             //mazanie testov
             for (int i = 0; i < listOfTests.size(); i++){
-                NodeWithKey personNodeWithKey = new NodeWithKey(personNode,personKey);
+                NodeWithKey personNodeWithKey = new NodeWithKey(treeOfPeople.find(personData),personKey);
                 int testResultAddress = -1;
                 if (((PCRKey) listOfTests.get(i).getNode().get_data1()).compareTo((PCRKey) listOfTests.get(i).getKey()) == 0){
                     testResultAddress = ((Address) listOfTests.get(i).getNode().get_value1()).getAddressInUnsortedFile();
@@ -521,7 +524,6 @@ public class PCRSystem {
         if (!treeOfPeople.delete(personData)){
             return ResponseType.PROBLEM_WITH_DELETING;
         }
-        personUnsortedFile.delete(personAddress);
         return ResponseType.SUCCESS;
     }
 
@@ -537,14 +539,10 @@ public class PCRSystem {
         //najdenie testu
         NodeWithKey firstNode = treeOfPeople.getFirst();
         BST23Node<PCRKey,Address> testResult;
-        Person person;
-        int personAddress = -1;
         if (firstNode == null){
             return ResponseType.PERSON_DOESNT_EXIST;
         }else {
-            personAddress = ((Address) firstNode.getNode().get_value1()).getAddressInUnsortedFile();
-            person = personUnsortedFile.find(personAddress);
-            testResult = person.getTreeOfTests().find(tData);
+            testResult = ((Person) firstNode.getNode().get_value1()).getTreeOfTests().find(tData);
         }
         NodeWithKey nextNode = null;
         if (testResult == null){
@@ -552,13 +550,9 @@ public class PCRSystem {
             nextNode = treeOfPeople.getNext(firstNode.getNode(), ((PersonKey) firstNode.getKey()));
             while (nextNode != null){
                 if (((PersonKey) nextNode.getKey()).getIdNumber().equals(((PersonKey) nextNode.getNode().get_data1()).getIdNumber())){
-                    personAddress = ((Address) nextNode.getNode().get_value1()).getAddressInUnsortedFile();
-                    person = personUnsortedFile.find(personAddress);
-                    testResult = person.getTreeOfTests().find(tData);
+                    testResult = ((Person) nextNode.getNode().get_value1()).getTreeOfTests().find(tData);
                 }else {
-                    personAddress = ((Address) nextNode.getNode().get_value2()).getAddressInUnsortedFile();
-                    person = personUnsortedFile.find(personAddress);
-                    testResult = person.getTreeOfTests().find(tData);
+                    testResult = ((Person) nextNode.getNode().get_value2()).getTreeOfTests().find(tData);
                 }
                 if (testResult != null){
                     break;
@@ -598,15 +592,21 @@ public class PCRSystem {
             testValue = pcrUnsortedFile.find(testAddress);
         }
         if (((PersonKey) personNode.getKey()).getIdNumber().equals(((PersonKey) personNode.getNode().get_data1()).getIdNumber())){
-            person = personUnsortedFile.find(((Address) personNode.getNode().get_value1()).getAddressInUnsortedFile());
+            person = ((Person) personNode.getNode().get_value1());
         }else {
-            person = personUnsortedFile.find(((Address) personNode.getNode().get_value2()).getAddressInUnsortedFile());
+            person = ((Person) personNode.getNode().get_value2());
         }
 
         //mazanie pre okres
         PCRKeyDistrict districtPCRKey = new PCRKeyDistrict(testValue.isResult(),testValue.getDateAndTimeOfTest());
         PCRDistrictPositiveData deletedDistrictTestData = new PCRDistrictPositiveData(districtPCRKey, new Address(testAddress));
-        District district = districtUnsortedFile.find(testValue.getDistrict());
+        District district;
+        BST23Node<DistrictKey,District> testedDistrictNode = treeOfDistricts.find(new DistrictData(testValue.getDistrict(),new District()));
+        if (((DistrictKey) testedDistrictNode.get_data1()).getDistrictId() == testValue.getDistrict().getDistrictId()) {
+            district = testedDistrictNode.get_value1();
+        }else {
+            district = testedDistrictNode.get_value2();
+        }
         if(!district.deletePCRTest(deletedDistrictTestData)){
             return false;
         }
@@ -615,7 +615,13 @@ public class PCRSystem {
         //mazanie pre kraj
         PCRKeyRegion regionPCRKey = new PCRKeyRegion(testValue.isResult(),testValue.getDateAndTimeOfTest());
         PCRRegionData deletedRegionTestData = new PCRRegionData(regionPCRKey, new Address(testAddress));
-        Region region = regionUnsortedFile.find(testValue.getRegion());
+        Region region;
+        BST23Node<RegionKey,Region> testedRegionNode = treeOfRegions.find(new RegionData(testValue.getRegion(),new Region()));
+        if (((RegionKey) testedRegionNode.get_data1()).getRegionId() == testValue.getRegion().getRegionId()){
+            region = testedRegionNode.get_value1();
+        }else {
+            region = testedRegionNode.get_value2();
+        }
         if (!region.deletePCRTest(deletedRegionTestData)){
             return false;
         }
@@ -624,7 +630,13 @@ public class PCRSystem {
         //mazanie pre pracovisko
         PCRKeyDate workplacePCRKey = new PCRKeyDate(testValue.getDateAndTimeOfTest());
         PCRWorkplaceData deletedWorkplaceData = new PCRWorkplaceData(workplacePCRKey, new Address(testAddress));
-        Workplace workplace = workplaceUnsortedFile.find(testValue.getWorkplace());
+        Workplace workplace;
+        BST23Node<WorkplaceKey,Workplace> workplaceNode = treeOfWorkplace.find(new WorkplaceData(testValue.getWorkplace(), new Workplace()));
+        if (((WorkplaceKey) workplaceNode.get_data1()).getWorkplaceId() == testValue.getWorkplace().getWorkplaceId()){
+            workplace = workplaceNode.get_value1();
+        }else{
+            workplace = workplaceNode.get_value2();
+        }
         if (!workplace.deletePCRTest(deletedWorkplaceData)){
             return false;
         }
@@ -655,22 +667,19 @@ public class PCRSystem {
         for (int i = 0; i < pNumberOfRegions; i++){
             RegionKey rKey = new RegionKey(i);
             Region rValue = new Region(i,"Kraj "+i);
-            int regionAddress = regionUnsortedFile.insert(rValue);
-            RegionData rData = new RegionData(rKey,new Address(regionAddress));
+            RegionData rData = new RegionData(rKey,rValue);
             treeOfRegions.insert(rData);
         }
         for (int i = 0; i < pNumberOfDistricts; i++){
             DistrictKey dKey = new DistrictKey(i);
             District dValue = new District(i, "Okres "+i);
-            int districtAddress = districtUnsortedFile.insert(dValue);
-            DistrictData dData = new DistrictData(dKey,new Address(districtAddress));
+            DistrictData dData = new DistrictData(dKey,dValue);
             treeOfDistricts.insert(dData);
         }
         for (int i = 0; i < pNumberOfWorkplaces; i++){
             WorkplaceKey wKey = new WorkplaceKey(i);
             Workplace wValue = new Workplace(i);
-            int workplaceAddress = workplaceUnsortedFile.insert(wValue);
-            WorkplaceData wData = new WorkplaceData(wKey,new Address(workplaceAddress));
+            WorkplaceData wData = new WorkplaceData(wKey,wValue);
             treeOfWorkplace.insert(wData);
         }
         for (int i = 0; i < pNumberOfPeople; i++){
@@ -682,8 +691,7 @@ public class PCRSystem {
                     2,
                     3,
                     Integer.toString(i+1));
-            int personAddress = personUnsortedFile.insert(pValue);
-            PersonData pData = new PersonData(pKey,new Address(personAddress));
+            PersonData pData = new PersonData(pKey,pValue);
             treeOfPeople.insert(pData);
         }
 
@@ -744,20 +752,17 @@ public class PCRSystem {
     public PersonPCRResult findTestResultForPerson(String personId, String pcrId){
         //najdi osobu s danym rodnym cislom
         PersonKey pKey = new PersonKey(personId);
-        PersonData pData = new PersonData(pKey,new Address(UNDEFINED));
+        PersonData pData = new PersonData(pKey,new Person());
         BST23Node testedPersonNode = treeOfPeople.find(pData);
         if (testedPersonNode == null){
             //osoba sa v systeme nenachadza
             return new PersonPCRResult(ResponseType.PERSON_DOESNT_EXIST,null);
         }else {
             Person person;
-            int personAddress = -1;
             if (((PersonKey) testedPersonNode.get_data1()).getIdNumber().equals(personId)) {
-                personAddress = ((Address) testedPersonNode.get_value1()).getAddressInUnsortedFile();
-                person = personUnsortedFile.find(personAddress);
+                person = ((Person) testedPersonNode.get_value1());
             } else {
-                personAddress = ((Address) testedPersonNode.get_value2()).getAddressInUnsortedFile();
-                person = personUnsortedFile.find(personAddress);
+                person = ((Person) testedPersonNode.get_value2());
             }
             PCRKey tKey;
             try{
@@ -886,7 +891,7 @@ public class PCRSystem {
     public PersonPCRResult searchForTestsInWorkplace(int workplaceId, Date dateFrom, Date dateTo){
         String resultString = "";
         WorkplaceKey wKey = new WorkplaceKey(workplaceId);
-        WorkplaceData wData = new WorkplaceData(wKey,new Address(UNDEFINED));
+        WorkplaceData wData = new WorkplaceData(wKey,new Workplace());
         BST23Node workplaceNode = treeOfWorkplace.find(wData);
         if (workplaceNode == null){
             return new PersonPCRResult(ResponseType.WORKPLACE_DOESNT_EXIST,null);
@@ -900,8 +905,7 @@ public class PCRSystem {
             PCRWorkplaceData pDataTo = new PCRWorkplaceData(pKeyTo,new Address(UNDEFINED));
             if (((WorkplaceKey) workplaceNode.get_data1()).getWorkplaceId() == workplaceId){
                 ArrayList<BST23Node> listOfFoundNodes;
-                Workplace workplace = workplaceUnsortedFile.find(((Address) workplaceNode.get_value1()).getAddressInUnsortedFile());
-                listOfFoundNodes = workplace.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+                listOfFoundNodes = ((Workplace) workplaceNode.get_value1()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
                     PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
@@ -910,7 +914,13 @@ public class PCRSystem {
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = personUnsortedFile.find(pcr.getPerson());
+                    Person person;
+                    BST23Node<PersonKey,Person> personNode = treeOfPeople.find(new PersonData(pcr.getPerson(), new Person()));
+                    if (personNode.get_data1().getIdNumber().equals(pcr.getPerson().getIdNumber())){
+                        person = personNode.get_value1();
+                    }else {
+                        person = personNode.get_value2();
+                    }
                     resultString += (i+1) + ". \n" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
@@ -937,8 +947,7 @@ public class PCRSystem {
                 return new PersonPCRResult(ResponseType.SUCCESS,resultString);
             }else {
                 ArrayList<BST23Node> listOfFoundNodes;
-                Workplace workplace = workplaceUnsortedFile.find(((Address) workplaceNode.get_value2()).getAddressInUnsortedFile());
-                listOfFoundNodes = workplace.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+                listOfFoundNodes = ((Workplace) workplaceNode.get_value2()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
                     PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
@@ -947,7 +956,13 @@ public class PCRSystem {
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = personUnsortedFile.find(pcr.getPerson());
+                    Person person;
+                    BST23Node<PersonKey,Person> personNode = treeOfPeople.find(new PersonData(pcr.getPerson(), new Person()));
+                    if (personNode.get_data1().getIdNumber().equals(pcr.getPerson().getIdNumber())){
+                        person = personNode.get_value1();
+                    }else {
+                        person = personNode.get_value2();
+                    }
                     resultString += (i+1) + ". \n" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
@@ -979,7 +994,7 @@ public class PCRSystem {
     public PersonPCRResult searchSickPeopleInRegion(int regionId, Date dateFrom, Date dateTo, boolean positivity){
         String resultString = "";
         RegionKey rKey = new RegionKey(regionId);
-        RegionData rData = new RegionData(rKey,new Address(UNDEFINED));
+        RegionData rData = new RegionData(rKey,new Region());
         BST23Node regionNode = treeOfRegions.find(rData);
         if (regionNode == null){
             return new PersonPCRResult(ResponseType.REGION_DOESNT_EXIST,null);
@@ -993,8 +1008,7 @@ public class PCRSystem {
             PCRRegionData pDataTo = new PCRRegionData(pKeyTo,new Address(UNDEFINED));
             if (((RegionKey) regionNode.get_data1()).getRegionId() == regionId){
                 ArrayList<BST23Node> listOfFoundNodes;
-                Region region = regionUnsortedFile.find(((Address) regionNode.get_value1()).getAddressInUnsortedFile());
-                listOfFoundNodes = region.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+                listOfFoundNodes = ((Region) regionNode.get_value1()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
                     PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
@@ -1003,7 +1017,13 @@ public class PCRSystem {
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = personUnsortedFile.find(pcr.getPerson());
+                    Person person;
+                    BST23Node<PersonKey,Person> personNode = treeOfPeople.find(new PersonData(pcr.getPerson(), new Person()));
+                    if (personNode.get_data1().getIdNumber().equals(pcr.getPerson().getIdNumber())){
+                        person = personNode.get_value1();
+                    }else {
+                        person = personNode.get_value2();
+                    }
                     resultString += (i+1) + ". \n" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
@@ -1027,8 +1047,7 @@ public class PCRSystem {
                 return new PersonPCRResult(ResponseType.SUCCESS,resultString);
             }else {
                 ArrayList<BST23Node> listOfFoundNodes;
-                Region region = regionUnsortedFile.find(((Address) regionNode.get_value2()).getAddressInUnsortedFile());
-                listOfFoundNodes = region.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+                listOfFoundNodes = ((Region) regionNode.get_value2()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
                     PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
@@ -1037,7 +1056,13 @@ public class PCRSystem {
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = personUnsortedFile.find(pcr.getPerson());
+                    Person person;
+                    BST23Node<PersonKey,Person> personNode = treeOfPeople.find(new PersonData(pcr.getPerson(), new Person()));
+                    if (personNode.get_data1().getIdNumber().equals(pcr.getPerson().getIdNumber())){
+                        person = personNode.get_value1();
+                    }else {
+                        person = personNode.get_value2();
+                    }
                     resultString += (i+1) + ". \n" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
@@ -1069,58 +1094,52 @@ public class PCRSystem {
         }
         String resultString = "";
         int numberOfSickPeople = 0;
-        BST23<RegionSickCountKey, Address> regionsSortedByNumberOfSickPeople = new BST23<RegionSickCountKey,Address>(
-                "pcrSystemFiles/regSickAddress",
-                RegionSickCountKey.class,
-                Address.class);
+        BST23_old<RegionSickCountKey, Region> regionsSortedByNumberOfSickPeople = new BST23_old<>();
         NodeWithKey firstNode = treeOfRegions.getFirst();
         if (firstNode == null){
             //ziadne kraje tak vrati prazdne
             return new PersonPCRResult(ResponseType.SUCCESS, resultString);
         }else {
-            int regionAddress = ((Address) firstNode.getNode().get_value1()).getAddressInUnsortedFile();
-            Region region = regionUnsortedFile.find(regionAddress);
             numberOfSickPeople = getNumberOfSickInRegion(
-                    region,
+                    ((Region) firstNode.getNode().get_value1()),
                     dateFrom,
                     dateTo);
             //vlozenie kraju do stromu kde sa usporiadava podla poctu chorych
             RegionSickCountKey key = new RegionSickCountKey(
                     numberOfSickPeople, ((RegionKey) firstNode.getKey()).getRegionId());
-            RegionSickCountData data = new RegionSickCountData(key,new Address(regionAddress));
+            Region value = ((Region) firstNode.getNode().get_value1());
+            RegionSickCountData data = new RegionSickCountData(key,value);
             regionsSortedByNumberOfSickPeople.insert(data);
         }
         NodeWithKey nextNode = treeOfRegions.getNext(firstNode.getNode(), (RegionKey) firstNode.getKey());
         while (nextNode != null){
             if (((RegionKey) nextNode.getKey()).getRegionId() == ((RegionKey) nextNode.getNode().get_data1()).getRegionId()){
-                int regionAddress = ((Address) nextNode.getNode().get_value1()).getAddressInUnsortedFile();
-                Region region = regionUnsortedFile.find(regionAddress);
                 numberOfSickPeople = getNumberOfSickInRegion(
-                        region,
+                        ((Region) nextNode.getNode().get_value1()),
                         dateFrom,
                         dateTo);
                 //vlozenie kraju do stromu kde sa usporiadava podla poctu chorych
                 RegionSickCountKey key = new RegionSickCountKey(
                         numberOfSickPeople, ((RegionKey) nextNode.getKey()).getRegionId());
-                RegionSickCountData data = new RegionSickCountData(key,new Address(regionAddress));
+                Region value = ((Region) nextNode.getNode().get_value1());
+                RegionSickCountData data = new RegionSickCountData(key,value);
                 regionsSortedByNumberOfSickPeople.insert(data);
             }else {
-                int regionAddress = ((Address) nextNode.getNode().get_value2()).getAddressInUnsortedFile();
-                Region region = regionUnsortedFile.find(regionAddress);
                 numberOfSickPeople = getNumberOfSickInRegion(
-                        region,
+                        ((Region) nextNode.getNode().get_value2()),
                         dateFrom,
                         dateTo);
                 //vlozenie kraju do stromu kde sa usporiadava podla poctu chorych
                 RegionSickCountKey key = new RegionSickCountKey(
                         numberOfSickPeople, ((RegionKey) nextNode.getKey()).getRegionId());
-                RegionSickCountData data = new RegionSickCountData(key,new Address(regionAddress));
+                Region value = ((Region) nextNode.getNode().get_value2());
+                RegionSickCountData data = new RegionSickCountData(key,value);
                 regionsSortedByNumberOfSickPeople.insert(data);
             }
             nextNode = treeOfRegions.getNext(nextNode.getNode(), ((RegionKey) nextNode.getKey()));
         }
         //prejdenie stromu s krajmi zoradenymi podla poctu chorych
-        NodeWithKey firstRegion = regionsSortedByNumberOfSickPeople.getFirst();
+        NodeWithKey_old firstRegion = regionsSortedByNumberOfSickPeople.getFirst();
         int order = 0;
         if (firstRegion == null){
             return new PersonPCRResult(ResponseType.SUCCESS, resultString);
@@ -1128,7 +1147,7 @@ public class PCRSystem {
             order++;
             resultString += getStringOfRegionsBySickCount(firstRegion, order);
         }
-        NodeWithKey nextRegion = regionsSortedByNumberOfSickPeople.getNext(
+        NodeWithKey_old nextRegion = regionsSortedByNumberOfSickPeople.getNext(
                 firstRegion.getNode(), ((RegionSickCountKey) firstRegion.getKey()));
         while (nextRegion != null){
             order++;
@@ -1139,17 +1158,15 @@ public class PCRSystem {
         return new PersonPCRResult(ResponseType.SUCCESS, resultString);
     }
 
-    private String getStringOfRegionsBySickCount(NodeWithKey pNodeWithKey, int nextValue){
+    private String getStringOfRegionsBySickCount(NodeWithKey_old pNodeWithKey, int nextValue){
         String resultString = "";
         if (((RegionSickCountKey) pNodeWithKey.getNode().get_data1()).equals(((RegionSickCountKey) pNodeWithKey.getKey()))){
-            Region region = regionUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value1()).getAddressInUnsortedFile());
-            resultString += nextValue + ". " + region.getName() + "\n" +
+            resultString += nextValue + ". " + ((Region) pNodeWithKey.getNode().get_value1()).getName() + "\n" +
                     "Pocet chorych = " +
                     ((RegionSickCountKey) pNodeWithKey.getNode().get_data1()).getNumberOfSickPeople() + "\n" +
                     "---------------------------------\n";
         }else {
-            Region region = regionUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value2()).getAddressInUnsortedFile());
-            resultString += nextValue + ". " + region.getName() + "\n" +
+            resultString += nextValue + ". " + ((Region) pNodeWithKey.getNode().get_value2()).getName() + "\n" +
                     "Pocet chorych = " +
                     ((RegionSickCountKey) pNodeWithKey.getNode().get_data2()).getNumberOfSickPeople() + "\n" +
                     "---------------------------------\n";
@@ -1172,58 +1189,52 @@ public class PCRSystem {
         }
         String resultString = "";
         int numberOfSickPeople = 0;
-        BST23<DistrictSickCountKey, Address> districtSortedByNumberOfSickPeople = new BST23<DistrictSickCountKey,Address>(
-                "pcrSystemFiles/distrSickAddress",
-                DistrictSickCountKey.class,
-                Address.class);
+        BST23_old<DistrictSickCountKey, District> districtSortedByNumberOfSickPeople = new BST23_old<>();
         NodeWithKey firstNode = treeOfDistricts.getFirst();
         if (firstNode == null){
             //ziadne okresy tak vrati prazdne
             return new PersonPCRResult(ResponseType.SUCCESS, resultString);
         }else {
-            int districtAddress = ((Address) firstNode.getNode().get_value1()).getAddressInUnsortedFile();
-            District district = districtUnsortedFile.find(districtAddress);
             numberOfSickPeople = getNumberOfSickInDistrict(
-                    district,
+                    ((District) firstNode.getNode().get_value1()),
                     dateFrom,
                     dateTo);
             //vlozenie okresu do stromu kde sa usporiadava podla poctu chorych
             DistrictSickCountKey key = new DistrictSickCountKey(
                     numberOfSickPeople, ((DistrictKey) firstNode.getKey()).getDistrictId());
-            DistrictSickCountData data = new DistrictSickCountData(key,new Address(districtAddress));
+            District value = ((District) firstNode.getNode().get_value1());
+            DistrictSickCountData data = new DistrictSickCountData(key,value);
             districtSortedByNumberOfSickPeople.insert(data);
         }
         NodeWithKey nextNode = treeOfDistricts.getNext(firstNode.getNode(), (DistrictKey) firstNode.getKey());
         while (nextNode != null){
             if (((DistrictKey) nextNode.getKey()).getDistrictId() == ((DistrictKey) nextNode.getNode().get_data1()).getDistrictId()){
-                int districtAddress = ((Address) nextNode.getNode().get_value1()).getAddressInUnsortedFile();
-                District district = districtUnsortedFile.find(districtAddress);
                 numberOfSickPeople = getNumberOfSickInDistrict(
-                        district,
+                        ((District) nextNode.getNode().get_value1()),
                         dateFrom,
                         dateTo);
                 //vlozenie okresu do stromu kde sa usporiadava podla poctu chorych
                 DistrictSickCountKey key = new DistrictSickCountKey(
                         numberOfSickPeople, ((DistrictKey) nextNode.getKey()).getDistrictId());
-                DistrictSickCountData data = new DistrictSickCountData(key,new Address(districtAddress));
+                District value = ((District) nextNode.getNode().get_value1());
+                DistrictSickCountData data = new DistrictSickCountData(key,value);
                 districtSortedByNumberOfSickPeople.insert(data);
             }else {
-                int districtAddress = ((Address) nextNode.getNode().get_value2()).getAddressInUnsortedFile();
-                District district = districtUnsortedFile.find(districtAddress);
                 numberOfSickPeople = getNumberOfSickInDistrict(
-                        district,
+                        ((District) nextNode.getNode().get_value2()),
                         dateFrom,
                         dateTo);
                 //vlozenie okresu do stromu kde sa usporiadava podla poctu chorych
                 DistrictSickCountKey key = new DistrictSickCountKey(
                         numberOfSickPeople, ((DistrictKey) nextNode.getKey()).getDistrictId());
-                DistrictSickCountData data = new DistrictSickCountData(key,new Address(districtAddress));
+                District value = ((District) nextNode.getNode().get_value2());
+                DistrictSickCountData data = new DistrictSickCountData(key,value);
                 districtSortedByNumberOfSickPeople.insert(data);
             }
             nextNode = treeOfDistricts.getNext(nextNode.getNode(), ((DistrictKey) nextNode.getKey()));
         }
         //prejdenie stromu s okresmi zoradenymi podla poctu chorych
-        NodeWithKey firstDistrict = districtSortedByNumberOfSickPeople.getFirst();
+        NodeWithKey_old firstDistrict = districtSortedByNumberOfSickPeople.getFirst();
         int order = 0;
         if (firstDistrict == null){
             return new PersonPCRResult(ResponseType.SUCCESS, resultString);
@@ -1231,7 +1242,7 @@ public class PCRSystem {
             order++;
             resultString += getStringOfDistrictsBySickCount(firstDistrict, order);
         }
-        NodeWithKey nextDistrict = districtSortedByNumberOfSickPeople.getNext(
+        NodeWithKey_old nextDistrict = districtSortedByNumberOfSickPeople.getNext(
                 firstDistrict.getNode(), ((DistrictSickCountKey) firstDistrict.getKey()));
         while (nextDistrict != null){
             order++;
@@ -1242,17 +1253,15 @@ public class PCRSystem {
         return new PersonPCRResult(ResponseType.SUCCESS, resultString);
     }
 
-    private String getStringOfDistrictsBySickCount(NodeWithKey pNodeWithKey, int nextValue){
+    private String getStringOfDistrictsBySickCount(NodeWithKey_old pNodeWithKey, int nextValue){
         String resultString = "";
         if (((DistrictSickCountKey) pNodeWithKey.getNode().get_data1()).equals(((DistrictSickCountKey) pNodeWithKey.getKey()))){
-            District district = districtUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value1()).getAddressInUnsortedFile());
-            resultString += nextValue + ". " + district.getName() + "\n" +
+            resultString += nextValue + ". " + ((District) pNodeWithKey.getNode().get_value1()).getName() + "\n" +
                     "Pocet chorych = " +
                     ((DistrictSickCountKey) pNodeWithKey.getNode().get_data1()).getNumberOfSickPeople() + "\n" +
                     "---------------------------------\n";
         }else {
-            District district = districtUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value2()).getAddressInUnsortedFile());
-            resultString += nextValue + ". " + district.getName() + "\n" +
+            resultString += nextValue + ". " + ((District) pNodeWithKey.getNode().get_value2()).getName() + "\n" +
                     "Pocet chorych = " +
                     ((DistrictSickCountKey) pNodeWithKey.getNode().get_data2()).getNumberOfSickPeople() + "\n" +
                     "---------------------------------\n";
@@ -1272,7 +1281,7 @@ public class PCRSystem {
     public PersonPCRResult searchSickPeopleInDistrict(int districtId, Date dateFrom, Date dateTo, boolean positivity){
         String resultString = "";
         DistrictKey dKey = new DistrictKey(districtId);
-        DistrictData dData = new DistrictData(dKey,new Address(UNDEFINED));
+        DistrictData dData = new DistrictData(dKey,new District());
         BST23Node districtNode = treeOfDistricts.find(dData);
         if (districtNode == null){
             return new PersonPCRResult(ResponseType.DISTRICT_DOESNT_EXIST,null);
@@ -1286,8 +1295,7 @@ public class PCRSystem {
             PCRDistrictPositiveData pDataTo = new PCRDistrictPositiveData(pKeyTo,new Address(UNDEFINED));
             if (((DistrictKey) districtNode.get_data1()).getDistrictId() == districtId){
                 ArrayList<BST23Node> listOfFoundNodes;
-                District district = districtUnsortedFile.find(((Address) districtNode.get_value1()).getAddressInUnsortedFile());
-                listOfFoundNodes = district.getTreeOfTestedPeople().intervalSearch(pDataFrom,pDataTo);
+                listOfFoundNodes = ((District) districtNode.get_value1()).getTreeOfTestedPeople().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
                     PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
@@ -1296,7 +1304,13 @@ public class PCRSystem {
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = personUnsortedFile.find(pcr.getPerson());
+                    Person person;
+                    BST23Node<PersonKey,Person> personNode = treeOfPeople.find(new PersonData(pcr.getPerson(), new Person()));
+                    if (personNode.get_data1().getIdNumber().equals(pcr.getPerson().getIdNumber())){
+                        person = personNode.get_value1();
+                    }else {
+                        person = personNode.get_value2();
+                    }
                     resultString += (i+1) + ". \n" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
@@ -1320,8 +1334,7 @@ public class PCRSystem {
                 return new PersonPCRResult(ResponseType.SUCCESS,resultString);
             }else {
                 ArrayList<BST23Node> listOfFoundNodes;
-                District district = districtUnsortedFile.find(((Address) districtNode.get_value2()).getAddressInUnsortedFile());
-                listOfFoundNodes = district.getTreeOfTestedPeople().intervalSearch(pDataFrom,pDataTo);
+                listOfFoundNodes = ((District) districtNode.get_value2()).getTreeOfTestedPeople().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
                     PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
@@ -1330,7 +1343,13 @@ public class PCRSystem {
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = personUnsortedFile.find(pcr.getPerson());
+                    Person person;
+                    BST23Node<PersonKey,Person> personNode = treeOfPeople.find(new PersonData(pcr.getPerson(), new Person()));
+                    if (personNode.get_data1().getIdNumber().equals(pcr.getPerson().getIdNumber())){
+                        person = personNode.get_value1();
+                    }else {
+                        person = personNode.get_value2();
+                    }
                     resultString += (i+1) + ". \n" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
@@ -1359,7 +1378,7 @@ public class PCRSystem {
     public ResultWIthNumberOfResults searchTestsInDistrict(int districtId, Date dateFrom, Date dateTo, boolean positivity){
         String resultString = "";
         DistrictKey dKey = new DistrictKey(districtId);
-        DistrictData dData = new DistrictData(dKey,new Address(UNDEFINED));
+        DistrictData dData = new DistrictData(dKey,new District());
         BST23Node districtNode = treeOfDistricts.find(dData);
         if (districtNode == null){
             return new ResultWIthNumberOfResults(ResponseType.DISTRICT_DOESNT_EXIST,null, 0);
@@ -1373,8 +1392,7 @@ public class PCRSystem {
             PCRDistrictPositiveData pDataTo = new PCRDistrictPositiveData(pKeyTo,new Address(UNDEFINED));
             if (((DistrictKey) districtNode.get_data1()).getDistrictId() == districtId){
                 ArrayList<BST23Node> listOfFoundNodes;
-                District district = districtUnsortedFile.find(((Address) districtNode.get_value1()).getAddressInUnsortedFile());
-                listOfFoundNodes = district.getTreeOfTestedPeople().intervalSearch(pDataFrom,pDataTo);
+                listOfFoundNodes = ((District) districtNode.get_value1()).getTreeOfTestedPeople().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
                     PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
@@ -1383,7 +1401,13 @@ public class PCRSystem {
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = personUnsortedFile.find(pcr.getPerson());
+                    Person person;
+                    BST23Node<PersonKey,Person> personNode = treeOfPeople.find(new PersonData(pcr.getPerson(), new Person()));
+                    if (personNode.get_data1().getIdNumber().equals(pcr.getPerson().getIdNumber())){
+                        person = personNode.get_value1();
+                    }else {
+                        person = personNode.get_value2();
+                    }
                     resultString += "" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
@@ -1410,8 +1434,7 @@ public class PCRSystem {
                 return new ResultWIthNumberOfResults(ResponseType.SUCCESS,resultString, listOfFoundNodes.size());
             }else {
                 ArrayList<BST23Node> listOfFoundNodes;
-                District district = districtUnsortedFile.find(((Address) districtNode.get_value2()).getAddressInUnsortedFile());
-                listOfFoundNodes = district.getTreeOfTestedPeople().intervalSearch(pDataFrom,pDataTo);
+                listOfFoundNodes = ((District) districtNode.get_value2()).getTreeOfTestedPeople().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
                     PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
@@ -1420,7 +1443,13 @@ public class PCRSystem {
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = personUnsortedFile.find(pcr.getPerson());
+                    Person person;
+                    BST23Node<PersonKey,Person> personNode = treeOfPeople.find(new PersonData(pcr.getPerson(), new Person()));
+                    if (personNode.get_data1().getIdNumber().equals(pcr.getPerson().getIdNumber())){
+                        person = personNode.get_value1();
+                    }else {
+                        person = personNode.get_value2();
+                    }
                     resultString += "" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
@@ -1452,7 +1481,7 @@ public class PCRSystem {
     public ResultWIthNumberOfResults searchTestsInRegion(int regionId, Date dateFrom, Date dateTo, boolean positivity){
         String resultString = "";
         RegionKey rKey = new RegionKey(regionId);
-        RegionData rData = new RegionData(rKey,new Address(UNDEFINED));
+        RegionData rData = new RegionData(rKey,new Region());
         BST23Node regionNode = treeOfRegions.find(rData);
         if (regionNode == null){
             return new ResultWIthNumberOfResults(ResponseType.REGION_DOESNT_EXIST,null,0);
@@ -1466,8 +1495,7 @@ public class PCRSystem {
             PCRRegionData pDataTo = new PCRRegionData(pKeyTo,new Address(UNDEFINED));
             if (((RegionKey) regionNode.get_data1()).getRegionId() == regionId){
                 ArrayList<BST23Node> listOfFoundNodes;
-                Region region = regionUnsortedFile.find(((Address) regionNode.get_value1()).getAddressInUnsortedFile());
-                listOfFoundNodes = region.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+                listOfFoundNodes = ((Region) regionNode.get_value1()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
                     PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
@@ -1476,7 +1504,13 @@ public class PCRSystem {
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = personUnsortedFile.find(pcr.getPerson());
+                    Person person;
+                    BST23Node<PersonKey,Person> personNode = treeOfPeople.find(new PersonData(pcr.getPerson(), new Person()));
+                    if (personNode.get_data1().getIdNumber().equals(pcr.getPerson().getIdNumber())){
+                        person = personNode.get_value1();
+                    }else {
+                        person = personNode.get_value2();
+                    }
                     resultString += person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
@@ -1503,8 +1537,7 @@ public class PCRSystem {
                 return new ResultWIthNumberOfResults(ResponseType.SUCCESS,resultString, listOfFoundNodes.size());
             }else {
                 ArrayList<BST23Node> listOfFoundNodes;
-                Region region = regionUnsortedFile.find(((Address) regionNode.get_value2()).getAddressInUnsortedFile());
-                listOfFoundNodes = region.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+                listOfFoundNodes = ((Region) regionNode.get_value2()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
                     PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
@@ -1513,7 +1546,13 @@ public class PCRSystem {
                     }else {
                         res = "NEGATIVNY";
                     }
-                    Person person = personUnsortedFile.find(pcr.getPerson());
+                    Person person;
+                    BST23Node<PersonKey,Person> personNode = treeOfPeople.find(new PersonData(pcr.getPerson(), new Person()));
+                    if (personNode.get_data1().getIdNumber().equals(pcr.getPerson().getIdNumber())){
+                        person = personNode.get_value1();
+                    }else {
+                        person = personNode.get_value2();
+                    }
                     resultString += person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
@@ -1572,8 +1611,7 @@ public class PCRSystem {
         if (firstNode == null){
             return new PersonPCRResult(ResponseType.SUCCESS, null);
         }else {
-            Person person = personUnsortedFile.find(((Address) firstNode.getNode().get_value1()).getAddressInUnsortedFile());
-            result = findTestResultForPerson(person, PCRId);
+            result = findTestResultForPerson(((Person) firstNode.getNode().get_value1()), PCRId);
             if (result.getResponseType() == ResponseType.SUCCESS){
                 return result;
             }
@@ -1584,11 +1622,9 @@ public class PCRSystem {
         NodeWithKey nextNode = treeOfPeople.getNext(firstNode.getNode(), ((PersonKey) firstNode.getKey()));
         while (nextNode != null){
             if (((PersonKey) nextNode.getKey()).getIdNumber().equals(((PersonKey) nextNode.getNode().get_data1()).getIdNumber())){
-                Person person = personUnsortedFile.find(((Address) nextNode.getNode().get_value1()).getAddressInUnsortedFile());
-                result = findTestResultForPerson(person, PCRId);
+                result = findTestResultForPerson(((Person) nextNode.getNode().get_value1()), PCRId);
             }else {
-                Person person = personUnsortedFile.find(((Address) nextNode.getNode().get_value2()).getAddressInUnsortedFile());
-                result = findTestResultForPerson(person, PCRId);
+                result = findTestResultForPerson(((Person) nextNode.getNode().get_value2()), PCRId);
             }
             if (result.getResponseType() == ResponseType.SUCCESS){
                 return result;
@@ -1633,8 +1669,7 @@ public class PCRSystem {
         PCRRegionData pDataTo = new PCRRegionData(pKeyTo,new Address(UNDEFINED));
         if (((RegionKey) pNodeWithKey.getNode().get_data1()).getRegionId() == ((RegionKey) pNodeWithKey.getKey()).getRegionId()){
             ArrayList<BST23Node> listOfFoundNodes;
-            Region region = regionUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value1()).getAddressInUnsortedFile());
-            listOfFoundNodes = region.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+            listOfFoundNodes = ((Region) pNodeWithKey.getNode().get_value1()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
             for (int i = 0; i < listOfFoundNodes.size(); i++){
                 String res;
                 PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
@@ -1643,7 +1678,13 @@ public class PCRSystem {
                 }else {
                     res = "NEGATIVNY";
                 }
-                Person person = personUnsortedFile.find(pcr.getPerson());
+                Person person;
+                BST23Node<PersonKey,Person> personNode = treeOfPeople.find(new PersonData(pcr.getPerson(), new Person()));
+                if (personNode.get_data1().getIdNumber().equals(pcr.getPerson().getIdNumber())){
+                    person = personNode.get_value1();
+                }else {
+                    person = personNode.get_value2();
+                }
                 resultString += person.getName() + " " + person.getSurname()
                         + "\n" + person.getIdNumber() +
                         "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
@@ -1667,8 +1708,7 @@ public class PCRSystem {
             return new ResultWIthNumberOfResults(null,resultString, listOfFoundNodes.size());
         }else {
             ArrayList<BST23Node> listOfFoundNodes;
-            Region region = regionUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value2()).getAddressInUnsortedFile());
-            listOfFoundNodes = region.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+            listOfFoundNodes = ((Region) pNodeWithKey.getNode().get_value2()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
             for (int i = 0; i < listOfFoundNodes.size(); i++){
                 String res;
                 PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
@@ -1677,7 +1717,13 @@ public class PCRSystem {
                 }else {
                     res = "NEGATIVNY";
                 }
-                Person person = personUnsortedFile.find(pcr.getPerson());
+                Person person;
+                BST23Node<PersonKey,Person> personNode = treeOfPeople.find(new PersonData(pcr.getPerson(), new Person()));
+                if (personNode.get_data1().getIdNumber().equals(pcr.getPerson().getIdNumber())){
+                    person = personNode.get_value1();
+                }else {
+                    person = personNode.get_value2();
+                }
                 resultString += person.getName() + " " + person.getSurname()
                         + "\n" + person.getIdNumber() +
                         "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
@@ -1710,8 +1756,7 @@ public class PCRSystem {
         PCRRegionData pDataTo = new PCRRegionData(pKeyTo,new Address(UNDEFINED));
         if (((RegionKey) pNodeWithKey.getNode().get_data1()).getRegionId() == ((RegionKey) pNodeWithKey.getKey()).getRegionId()){
             ArrayList<BST23Node> listOfFoundNodes;
-            Region region = regionUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value1()).getAddressInUnsortedFile());
-            listOfFoundNodes = region.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+            listOfFoundNodes = ((Region) pNodeWithKey.getNode().get_value1()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
             for (int i = 0; i < listOfFoundNodes.size(); i++){
                 String res;
                 PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
@@ -1720,7 +1765,13 @@ public class PCRSystem {
                 }else {
                     res = "NEGATIVNY";
                 }
-                Person person = personUnsortedFile.find(pcr.getPerson());
+                Person person;
+                BST23Node<PersonKey,Person> personNode = treeOfPeople.find(new PersonData(pcr.getPerson(), new Person()));
+                if (personNode.get_data1().getIdNumber().equals(pcr.getPerson().getIdNumber())){
+                    person = personNode.get_value1();
+                }else {
+                    person = personNode.get_value2();
+                }
                 resultString += person.getName() + " " + person.getSurname()
                         + "\n" + person.getIdNumber() +
                         "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
@@ -1744,8 +1795,7 @@ public class PCRSystem {
             return new ResultWIthNumberOfResults(null, resultString, listOfFoundNodes.size());
         }else {
             ArrayList<BST23Node> listOfFoundNodes;
-            Region region = regionUnsortedFile.find(((Address) pNodeWithKey.getNode().get_value2()).getAddressInUnsortedFile());
-            listOfFoundNodes = region.getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
+            listOfFoundNodes = ((Region) pNodeWithKey.getNode().get_value2()).getTreeOfTests().intervalSearch(pDataFrom,pDataTo);
             for (int i = 0; i < listOfFoundNodes.size(); i++){
                 String res;
                 PCR pcr = pcrUnsortedFile.find(((Address) listOfFoundNodes.get(i).get_value1()).getAddressInUnsortedFile());
@@ -1754,7 +1804,13 @@ public class PCRSystem {
                 }else {
                     res = "NEGATIVNY";
                 }
-                Person person = personUnsortedFile.find(pcr.getPerson());
+                Person person;
+                BST23Node<PersonKey,Person> personNode = treeOfPeople.find(new PersonData(pcr.getPerson(), new Person()));
+                if (personNode.get_data1().getIdNumber().equals(pcr.getPerson().getIdNumber())){
+                    person = personNode.get_value1();
+                }else {
+                    person = personNode.get_value2();
+                }
                 resultString += person.getName() + " " + person.getSurname()
                         + "\n" + person.getIdNumber() +
                         "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
@@ -1782,14 +1838,14 @@ public class PCRSystem {
     public PersonPCRResult searchTestsForPerson(String personId){
         String resultString = "";
         PersonKey pKey = new PersonKey(personId);
-        PersonData pData = new PersonData(pKey,new Address(UNDEFINED));
+        PersonData pData = new PersonData(pKey,new Person());
         BST23Node personNode = treeOfPeople.find(pData);
         if (personNode == null){
             return new PersonPCRResult(ResponseType.PERSON_DOESNT_EXIST,null);
         }else {
             if (((PersonKey) personNode.get_data1()).getIdNumber().equals(personId)){
                 ArrayList<BST23Node> listOfFoundNodes;
-                Person person = personUnsortedFile.find(((Address) personNode.get_value1()).getAddressInUnsortedFile());
+                Person person = ((Person) personNode.get_value1());
                 listOfFoundNodes = person.getTreeOfTestsByDate().inOrder();
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
@@ -1799,7 +1855,6 @@ public class PCRSystem {
                     }else {
                         res = "NEGATIVNY";
                     }
-                    //Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
                     resultString += (i+1) + ". \n" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
@@ -1828,7 +1883,7 @@ public class PCRSystem {
                 return new PersonPCRResult(ResponseType.SUCCESS,resultString);
             }else {
                 ArrayList<BST23Node> listOfFoundNodes;
-                Person person = personUnsortedFile.find(((Address) personNode.get_value2()).getAddressInUnsortedFile());
+                Person person = ((Person) personNode.get_value2());
                 listOfFoundNodes = person.getTreeOfTests().inOrder();
                 for (int i = 0; i < listOfFoundNodes.size(); i++){
                     String res;
@@ -1838,7 +1893,6 @@ public class PCRSystem {
                     }else {
                         res = "NEGATIVNY";
                     }
-                    //Person person = ((PCR) listOfFoundNodes.get(i).get_value1()).getPerson();
                     resultString += (i+1) + ". \n" + person.getName() + " " + person.getSurname()
                             + "\n" + person.getIdNumber() +
                             "\nNarodeny: " + person.getDateOfBirth().getDate() + "."
@@ -1869,347 +1923,6 @@ public class PCRSystem {
         }
     }
 
-    public boolean saveDataToFile() throws IOException {
-        //ukladanie okresov
-        /*FileWriter csvWriter = new FileWriter("okresy.csv");
-
-        NodeWithKey nextDistrict = treeOfDistricts.getFirst();
-        if (nextDistrict != null){
-            csvWriter.append(""+ ((DistrictKey) nextDistrict.getKey()).getDistrictId());
-            csvWriter.append(",");
-            csvWriter.append(((District) nextDistrict.getNode().get_value1()).getName());
-            csvWriter.append("\n");
-            nextDistrict = treeOfDistricts.getNext(
-                    nextDistrict.getNode(), ((DistrictKey) nextDistrict.getKey()));
-        }
-        while (nextDistrict != null){
-            if (nextDistrict.getKey().compareTo(((DistrictKey) nextDistrict.getNode().get_data1())) == 0){
-                csvWriter.append(""+ ((DistrictKey) nextDistrict.getKey()).getDistrictId());
-                csvWriter.append(",");
-                csvWriter.append(((District) nextDistrict.getNode().get_value1()).getName());
-                csvWriter.append("\n");
-            }else {
-                csvWriter.append(""+ ((DistrictKey) nextDistrict.getKey()).getDistrictId());
-                csvWriter.append(",");
-                csvWriter.append(((District) nextDistrict.getNode().get_value2()).getName());
-                csvWriter.append("\n");
-            }
-            nextDistrict = treeOfDistricts.getNext(
-                    nextDistrict.getNode(), ((DistrictKey) nextDistrict.getKey()));
-        }
-        csvWriter.flush();
-        csvWriter.close();
-
-        //ukladanie krajov
-        csvWriter = new FileWriter("kraje.csv");
-
-        NodeWithKey nextRegion = treeOfRegions.getFirst();
-        if (nextRegion != null){
-            csvWriter.append(""+ ((RegionKey) nextRegion.getKey()).getRegionId());
-            csvWriter.append(",");
-            csvWriter.append(((Region) nextRegion.getNode().get_value1()).getName());
-            csvWriter.append("\n");
-            nextRegion = treeOfRegions.getNext(
-                    nextRegion.getNode(), ((RegionKey) nextRegion.getKey()));
-        }
-        while (nextRegion != null){
-            if (nextRegion.getKey().compareTo(((RegionKey) nextRegion.getNode().get_data1())) == 0){
-                csvWriter.append(""+ ((RegionKey) nextRegion.getKey()).getRegionId());
-                csvWriter.append(",");
-                csvWriter.append(((Region) nextRegion.getNode().get_value1()).getName());
-                csvWriter.append("\n");
-            }else {
-                csvWriter.append(""+ ((RegionKey) nextRegion.getKey()).getRegionId());
-                csvWriter.append(",");
-                csvWriter.append(((Region) nextRegion.getNode().get_value2()).getName());
-                csvWriter.append("\n");
-            }
-            nextRegion = treeOfRegions.getNext(
-                    nextRegion.getNode(), ((RegionKey) nextRegion.getKey()));
-        }
-        csvWriter.flush();
-        csvWriter.close();
-
-        //ukladanie pracovisk
-        csvWriter = new FileWriter("pracoviska.csv");
-
-        NodeWithKey nextWorkplace = treeOfWorkplace.getFirst();
-        if (nextWorkplace != null){
-            csvWriter.append(""+ ((WorkplaceKey) nextWorkplace.getKey()).getWorkplaceId());
-            csvWriter.append("\n");
-            nextWorkplace = treeOfWorkplace.getNext(
-                    nextWorkplace.getNode(), ((WorkplaceKey) nextWorkplace.getKey()));
-        }
-        while (nextWorkplace != null){
-            csvWriter.append(""+ ((WorkplaceKey) nextWorkplace.getKey()).getWorkplaceId());
-            csvWriter.append("\n");
-            nextWorkplace = treeOfWorkplace.getNext(
-                    nextWorkplace.getNode(), ((WorkplaceKey) nextWorkplace.getKey()));
-        }
-        csvWriter.flush();
-        csvWriter.close();
-
-        //ukladanie osob
-        csvWriter = new FileWriter("osoby.csv");
-        FileWriter csvWriterTests = new FileWriter("testy.csv");
-
-        NodeWithKey nextPerson = treeOfPeople.getFirst();
-        if (nextPerson != null){
-            csvWriter.append(((PersonKey) nextPerson.getKey()).getIdNumber());
-            csvWriter.append(",");
-            csvWriter.append(((Person) nextPerson.getNode().get_value1()).getName());
-            csvWriter.append(",");
-            csvWriter.append(((Person) nextPerson.getNode().get_value1()).getSurname());
-            csvWriter.append(",");
-            csvWriter.append(""+((Person) nextPerson.getNode().get_value1()).getDateOfBirth().getDate());
-            csvWriter.append(",");
-            csvWriter.append(""+((Person) nextPerson.getNode().get_value1()).getDateOfBirth().getMonth());
-            csvWriter.append(",");
-            csvWriter.append(""+((Person) nextPerson.getNode().get_value1()).getDateOfBirth().getYear());
-            csvWriter.append("\n");
-            //ukladanie jeho testov
-            writeTestsForPersonToFile(csvWriterTests,((Person) nextPerson.getNode().get_value1()));
-            nextPerson = treeOfPeople.getNext(
-                    nextPerson.getNode(), ((PersonKey) nextPerson.getKey()));
-        }
-        while (nextPerson != null){
-            if (nextPerson.getKey().compareTo(((PersonKey) nextPerson.getNode().get_data1())) == 0){
-                csvWriter.append(((PersonKey) nextPerson.getKey()).getIdNumber());
-                csvWriter.append(",");
-                csvWriter.append(((Person) nextPerson.getNode().get_value1()).getName());
-                csvWriter.append(",");
-                csvWriter.append(((Person) nextPerson.getNode().get_value1()).getSurname());
-                csvWriter.append(",");
-                csvWriter.append(""+((Person) nextPerson.getNode().get_value1()).getDateOfBirth().getDate());
-                csvWriter.append(",");
-                csvWriter.append(""+((Person) nextPerson.getNode().get_value1()).getDateOfBirth().getMonth());
-                csvWriter.append(",");
-                csvWriter.append(""+((Person) nextPerson.getNode().get_value1()).getDateOfBirth().getYear());
-                csvWriter.append("\n");
-                writeTestsForPersonToFile(csvWriterTests,((Person) nextPerson.getNode().get_value1()));
-            }else {
-                csvWriter.append(((PersonKey) nextPerson.getKey()).getIdNumber());
-                csvWriter.append(",");
-                csvWriter.append(((Person) nextPerson.getNode().get_value2()).getName());
-                csvWriter.append(",");
-                csvWriter.append(((Person) nextPerson.getNode().get_value2()).getSurname());
-                csvWriter.append(",");
-                csvWriter.append(""+((Person) nextPerson.getNode().get_value2()).getDateOfBirth().getDate());
-                csvWriter.append(",");
-                csvWriter.append(""+((Person) nextPerson.getNode().get_value2()).getDateOfBirth().getMonth());
-                csvWriter.append(",");
-                csvWriter.append(""+((Person) nextPerson.getNode().get_value2()).getDateOfBirth().getYear());
-                csvWriter.append("\n");
-                writeTestsForPersonToFile(csvWriterTests,((Person) nextPerson.getNode().get_value2()));
-            }
-            nextPerson = treeOfPeople.getNext(
-                    nextPerson.getNode(), ((PersonKey) nextPerson.getKey()));
-        }
-        csvWriterTests.flush();
-        csvWriterTests.close();
-        csvWriter.flush();
-        csvWriter.close();*/
-        return true;
-    }
-
-    public void writeTestsForPersonToFile(FileWriter pFileWriter, Person pPerson) throws IOException {
-        /*NodeWithKey nextTest = pPerson.getTreeOfTests().getFirst();
-        if (nextTest != null){
-            pFileWriter.append(""+ ((PCRKey) nextTest.getKey()).getPCRId());
-            pFileWriter.append(",");
-            pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getDateAndTimeOfTest().getDate());
-            pFileWriter.append(",");
-            pFileWriter.append(""+(((PCR) nextTest.getNode().get_value1()).getDateAndTimeOfTest().getMonth()+1));
-            pFileWriter.append(",");
-            pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getDateAndTimeOfTest().getYear());
-            pFileWriter.append(",");
-            pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getDateAndTimeOfTest().getHours());
-            pFileWriter.append(",");
-            pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getDateAndTimeOfTest().getMinutes());
-            pFileWriter.append(",");
-            pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getDateAndTimeOfTest().getSeconds());
-            pFileWriter.append(",");
-            pFileWriter.append(((PCR) nextTest.getNode().get_value1()).getPatientId());
-            pFileWriter.append(",");
-            pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getWorkplaceId());
-            pFileWriter.append(",");
-            pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getDistrictId());
-            pFileWriter.append(",");
-            pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getRegionId());
-            pFileWriter.append(",");
-            pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).isResult());
-            pFileWriter.append(",");
-            pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getDescription());
-            pFileWriter.append("\n");
-            nextTest = pPerson.getTreeOfTests().getNext(
-                    nextTest.getNode(), ((PCRKey) nextTest.getKey()));
-        }
-        while (nextTest != null){
-            if (nextTest.getKey().compareTo(((PCRKey) nextTest.getNode().get_data1())) == 0){
-                pFileWriter.append(""+ ((PCRKey) nextTest.getKey()).getPCRId());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getDateAndTimeOfTest().getDate());
-                pFileWriter.append(",");
-                pFileWriter.append(""+(((PCR) nextTest.getNode().get_value1()).getDateAndTimeOfTest().getMonth()+1));
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getDateAndTimeOfTest().getYear());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getDateAndTimeOfTest().getHours());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getDateAndTimeOfTest().getMinutes());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getDateAndTimeOfTest().getSeconds());
-                pFileWriter.append(",");
-                pFileWriter.append(((PCR) nextTest.getNode().get_value1()).getPatientId());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getWorkplaceId());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getDistrictId());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getRegionId());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).isResult());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value1()).getDescription());
-                pFileWriter.append("\n");
-            }else {
-                pFileWriter.append(""+ ((PCRKey) nextTest.getKey()).getPCRId());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value2()).getDateAndTimeOfTest().getDate());
-                pFileWriter.append(",");
-                pFileWriter.append(""+(((PCR) nextTest.getNode().get_value2()).getDateAndTimeOfTest().getMonth()+1));
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value2()).getDateAndTimeOfTest().getYear());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value2()).getDateAndTimeOfTest().getHours());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value2()).getDateAndTimeOfTest().getMinutes());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value2()).getDateAndTimeOfTest().getSeconds());
-                pFileWriter.append(",");
-                pFileWriter.append(((PCR) nextTest.getNode().get_value2()).getPatientId());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value2()).getWorkplaceId());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value2()).getDistrictId());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value2()).getRegionId());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value2()).isResult());
-                pFileWriter.append(",");
-                pFileWriter.append(""+((PCR) nextTest.getNode().get_value2()).getDescription());
-                pFileWriter.append("\n");
-            }
-            nextTest = pPerson.getTreeOfTests().getNext(
-                    nextTest.getNode(), ((PCRKey) nextTest.getKey()));
-        }*/
-    }
-
-    public boolean loadDataFromFile() throws IOException {
-        /*BST23<PersonKey, Person> newTreeOfPeople = new BST23<>();
-        BST23<RegionKey, Region> newTreeOfRegions = new BST23<>();
-        BST23<DistrictKey, District> newTreeOfDistricts = new BST23<>();
-        BST23<WorkplaceKey, Workplace> newTreeOfWorkplace = new BST23<>();
-
-        //nacitavanie krajov
-        BufferedReader regionsReader = new BufferedReader(new FileReader("kraje.csv"));
-        String row;
-        while ((row = regionsReader.readLine()) != null) {
-            String[] data = row.split(",");
-            if (data[0] != null && data[1] != null){
-                RegionKey rKey = new RegionKey(Integer.parseInt(data[0]));
-                Region rValue = new Region(Integer.parseInt(data[0]), data[1]);
-                RegionData rData = new RegionData(rKey,rValue);
-                newTreeOfRegions.insert(rData);
-            }
-
-        }
-        regionsReader.close();
-
-        //nacitavanie okresov
-        BufferedReader districtsReader = new BufferedReader(new FileReader("okresy.csv"));
-        while ((row = districtsReader.readLine()) != null) {
-            String[] data = row.split(",");
-            if (data[0] != null && data[1] != null){
-                DistrictKey dKey = new DistrictKey(Integer.parseInt(data[0]));
-                District dValue = new District(Integer.parseInt(data[0]), data[1]);
-                DistrictData dData = new DistrictData(dKey,dValue);
-                newTreeOfDistricts.insert(dData);
-            }
-
-        }
-        districtsReader.close();
-
-        //nacitavanie pracovisk
-        BufferedReader workplaceReader = new BufferedReader(new FileReader("pracoviska.csv"));
-        while ((row = workplaceReader.readLine()) != null) {
-            String[] data = row.split(",");
-            if (data[0] != null){
-                WorkplaceKey wKey = new WorkplaceKey(Integer.parseInt(data[0]));
-                Workplace wValue = new Workplace(Integer.parseInt(data[0]));
-                WorkplaceData wData = new WorkplaceData(wKey,wValue);
-                newTreeOfWorkplace.insert(wData);
-            }
-
-        }
-        workplaceReader.close();
-
-        //nacitavanie osob
-        BufferedReader personReader = new BufferedReader(new FileReader("osoby.csv"));
-        while ((row = personReader.readLine()) != null) {
-            String[] data = row.split(",");
-            if (data[0] != null){
-                PersonKey pKey = new PersonKey(data[0]);
-                Person pValue = new Person(
-                        data[1],
-                        data[2],
-                        Integer.parseInt(data[5]),
-                        Integer.parseInt(data[4]),
-                        Integer.parseInt(data[3]),
-                        data[0]);
-                PersonData pData = new PersonData(pKey,pValue);
-                newTreeOfPeople.insert(pData);
-            }
-        }
-        personReader.close();
-
-        //priradenie novych stromov
-        treeOfRegions = newTreeOfRegions;
-        treeOfDistricts = newTreeOfDistricts;
-        treeOfWorkplace = newTreeOfWorkplace;
-        treeOfPeople = newTreeOfPeople;
-
-        //nacitavanie testov
-        BufferedReader testReader = new BufferedReader(new FileReader("testy.csv"));
-        while ((row = testReader.readLine()) != null) {
-            String[] data = row.split(",");
-            if (data[0] != null){
-                boolean result = false;
-                if (data[11] != null && data[11].equals("true")){
-                    result = true;
-                }
-                insertPCRTest(
-                        data[7],
-                        Integer.parseInt(data[3]),
-                        Integer.parseInt(data[2]),
-                        Integer.parseInt(data[1]),
-                        Integer.parseInt(data[4]),
-                        Integer.parseInt(data[5]),
-                        Integer.parseInt(data[6]),
-                        Integer.parseInt(data[8]),
-                        Integer.parseInt(data[9]),
-                        Integer.parseInt(data[10]),
-                        result,
-                        data[12],
-                        data[0]);
-            }
-        }
-        testReader.close();
-
-*/
-        return true;
-    }
-
     public String getAllRecordsPCRUnsorted(){
         String result = "";
         ArrayList<RecordWithAddress<PCR>> listOfRecords = pcrUnsortedFile.getAllRecordsFromFile();
@@ -2219,137 +1932,87 @@ public class PCRSystem {
             result += "Id testu: " + ((PCR) value.getRecord()).getPCRId() + ", pozitivita: " + ((PCR) value.getRecord()).isResult() + "\n";
             result += "Datum: " + ((PCR) value.getRecord()).getDateAndTimeOfTest() + ", popis: " + ((PCR) value.getRecord()).getDescription() + "\n";
             result += "Id kraja: " + ((PCR) value.getRecord()).getRegionId() + ", Id okresu: "
-                    + ((PCR) value.getRecord()).getDistrictId() + ", ID pracoviska" + ((PCR) value.getRecord()).getWorkplaceId() + "\n";
-            result += "Adresa kraja: " + ((PCR) value.getRecord()).getRegion() + ", Adresa okresu: "
-                    + ((PCR) value.getRecord()).getDistrict() + ", Adresa pracoviska" + ((PCR) value.getRecord()).getWorkplace() + "\n";
-            result += "Id osoby: " + ((PCR) value.getRecord()).getPatientId() + ", Adresa osoby: " + ((PCR) value.getRecord()).getPerson() + "\n";
+                    + ((PCR) value.getRecord()).getDistrictId() + ", ID pracoviska: " + ((PCR) value.getRecord()).getWorkplaceId() + "\n";
+            result += "Rodne cislo osoby: " + ((PCR) value.getRecord()).getPatientId() + "\n";
             result += "Velkost: " + ((PCR) value.getRecord()).getSize() +"\n";
             result += "-------------------------------------------------------\n";
         }
         return result;
     }
-    public String getAllRecordsPersonUnsorted(){
-        String result = "";
-        ArrayList<RecordWithAddress<Person>> listOfRecords = personUnsortedFile.getAllRecordsFromFile();
-        for (RecordWithAddress value: listOfRecords){
-            result += "-------------------------------------------------------\n";
-            result += "Adresa: " + value.getAddress() + ", validita: " + ((Person) value.getRecord()).isValid() + "\n";
-            result += "Rodne cislo: " + ((Person) value.getRecord()).getIdNumber() + ", datum narodenia: " + ((Person) value.getRecord()).getDateOfBirth() + "\n";
-            result += "Meno: " + ((Person) value.getRecord()).getName() + ", priezvisko: " + ((Person) value.getRecord()).getSurname() + "\n";
-            result += "Velkost: " + ((Person) value.getRecord()).getSize() + "\n";
-            result += "-------------------------------------------------------\n";
-        }
-        return result;
-    }
-    public String getAllRecordsRegionUnsorted(){
-        String result = "";
-        ArrayList<RecordWithAddress<Region>> listOfRecords = regionUnsortedFile.getAllRecordsFromFile();
-        for (RecordWithAddress value: listOfRecords){
-            result += "-------------------------------------------------------\n";
-            result += "Adresa: " + value.getAddress() + ", validita: " + ((Region) value.getRecord()).isValid() + "\n";
-            result += "Id: " + ((Region) value.getRecord()).getRegionId() + ", nazov: " + ((Region) value.getRecord()).getName() + "\n";
-            result += "Velkost: " + ((Region) value.getRecord()).getSize() + "\n";
-            result += "-------------------------------------------------------\n";
-        }
-        return result;
-    }
 
-    public String getAllRecordsDistrictUnsorted(){
-        String result = "";
-        ArrayList<RecordWithAddress<District>> listOfRecords = districtUnsortedFile.getAllRecordsFromFile();
-        for (RecordWithAddress value: listOfRecords){
-            result += "-------------------------------------------------------\n";
-            result += "Adresa: " + value.getAddress() + ", validita: " + ((District) value.getRecord()).isValid() + "\n";
-            result += "Id: " + ((District) value.getRecord()).getDistrictId() + ", nazov: " + ((District) value.getRecord()).getName() + "\n";
-            result += "Velkost: " + ((District) value.getRecord()).getSize() + "\n";
-            result += "-------------------------------------------------------\n";
-        }
-        return result;
-    }
-
-    public String getAllRecordsWorkplaceUnsorted(){
-        String result = "";
-        ArrayList<RecordWithAddress<Workplace>> listOfRecords = workplaceUnsortedFile.getAllRecordsFromFile();
-        for (RecordWithAddress value: listOfRecords){
-            result += "-------------------------------------------------------\n";
-            result += "Adresa: " + value.getAddress() + ", validita: " + ((Workplace) value.getRecord()).isValid() + "\n";
-            result += "Id: " + ((Workplace) value.getRecord()).getWorkplaceId() + "\n";
-            result += "Velkost: " + ((Workplace) value.getRecord()).getSize() + "\n";
-            result += "-------------------------------------------------------\n";
-        }
-        return result;
-    }
-    public String listAllPeopleAddressNodes(){
+    public String listAllPeopleNodes(){
         String result = "";
         ArrayList<BST23Node> listOfNodes = treeOfPeople.getAllNodesFromFile();
         for (BST23Node value: listOfNodes){
             PersonKey key = ((PersonKey) value.get_data1());
-            Address address = ((Address) value.get_value1());
+            Person person = ((Person) value.get_value1());
             result += "-------------------------------------------------------\n";
             result += "Node validita: " + value.isValid() + ", Adresa: " + value.get_address() + "\n";
             result += "Kluc 1: " + key.getIdNumber() +", Validita: " + key.isValid() +"\n";
-            result += "Adresa 1 na osobu: " + address.getAddressInUnsortedFile() + "\n";
+            result += "Rodne cislo: " + person.getIdNumber() + ", datum narodenia: " + person.getDateOfBirth() + "\n";
+            result += "Meno: " + person.getName() + ", priezvisko: " + person.getSurname() + "\n";
             key = (PersonKey) value.get_data2();
-            address = (Address) value.get_value2();
+            person = (Person) value.get_value2();
             result += "Kluc 2: " + key.getIdNumber() +", Validita: " + key.isValid() +"\n";
-            result += "Adresa 2 na osobu: " + address.getAddressInUnsortedFile() + "\n";
+            result += "Rodne cislo: " + person.getIdNumber() + ", datum narodenia: " + person.getDateOfBirth() + "\n";
+            result += "Meno: " + person.getName() + ", priezvisko: " + person.getSurname() + "\n";
             result += "-------------------------------------------------------\n";
         }
         return result;
     }
 
-    public String listAllRegionAddressNodes(){
+    public String listAllRegionNodes(){
         String result = "";
         ArrayList<BST23Node> listOfNodes = treeOfRegions.getAllNodesFromFile();
         for (BST23Node value: listOfNodes){
             RegionKey key = ((RegionKey) value.get_data1());
-            Address address = ((Address) value.get_value1());
+            Region region = ((Region) value.get_value1());
             result += "-------------------------------------------------------\n";
             result += "Node validita: " + value.isValid() + ", Adresa: " + value.get_address()+ "\n";
             result += "Kluc 1: " + key.getRegionId() +", Validita: " + key.isValid() +"\n";
-            result += "Adresa 1 na kraj: " + address.getAddressInUnsortedFile() + "\n";
+            result += "Nazov kraja: " + region.getName() + " ,kod kraja: " + region.getRegionId() + "\n";
             key = (RegionKey) value.get_data2();
-            address = (Address) value.get_value2();
+            region = (Region) value.get_value2();
             result += "Kluc 2: " + key.getRegionId() +", Validita: " + key.isValid() +"\n";
-            result += "Adresa 2 na kraj: " + address.getAddressInUnsortedFile() + "\n";
+            result += "Nazov kraja: " + region.getName() + " ,kod kraja: " + region.getRegionId() + "\n";
             result += "-------------------------------------------------------\n";
         }
         return result;
     }
 
-    public String listAllDistrictsAddressNodes(){
+    public String listAllDistrictNodes(){
         String result = "";
         ArrayList<BST23Node> listOfNodes = treeOfDistricts.getAllNodesFromFile();
         for (BST23Node value: listOfNodes){
             DistrictKey key = ((DistrictKey) value.get_data1());
-            Address address = ((Address) value.get_value1());
+            District district = ((District) value.get_value1());
             result += "-------------------------------------------------------\n";
             result += "Node validita: " + value.isValid() + ", Adresa: " + value.get_address()+ "\n";
             result += "Kluc 1: " + key.getDistrictId() +", Validita: " + key.isValid() +"\n";
-            result += "Adresa 1 na okres: " + address.getAddressInUnsortedFile() + "\n";
+            result += "Nazov okresu: " + district.getName() + " ,kod okresu: " + district.getDistrictId() + "\n";
             key = (DistrictKey) value.get_data2();
-            address = (Address) value.get_value2();
+            district = (District) value.get_value2();
             result += "Kluc 2: " + key.getDistrictId() +", Validita: " + key.isValid() +"\n";
-            result += "Adresa 2 na okres: " + address.getAddressInUnsortedFile() + "\n";
+            result += "Nazov okresu: " + district.getName() + " ,kod okresu: " + district.getDistrictId() + "\n";
             result += "-------------------------------------------------------\n";
         }
         return result;
     }
 
-    public String listAllWorkplaceAddressNodes(){
+    public String listAllWorkplaceNodes(){
         String result = "";
         ArrayList<BST23Node> listOfNodes = treeOfWorkplace.getAllNodesFromFile();
         for (BST23Node value: listOfNodes){
             WorkplaceKey key = ((WorkplaceKey) value.get_data1());
-            Address address = ((Address) value.get_value1());
+            Workplace workplace = ((Workplace) value.get_value1());
             result += "-------------------------------------------------------\n";
             result += "Node validita: " + value.isValid() + ", Adresa: " + value.get_address()+ "\n";
             result += "Kluc 1: " + key.getWorkplaceId() +", Validita: " + key.isValid() +"\n";
-            result += "Adresa 1 na pracovisko: " + address.getAddressInUnsortedFile() + "\n";
+            result += "Kluc z datoveho objektu: " + workplace.getWorkplaceId() + "\n";
             key = (WorkplaceKey) value.get_data2();
-            address = (Address) value.get_value2();
+            workplace = (Workplace) value.get_value2();
             result += "Kluc 2: " + key.getWorkplaceId() +", Validita: " + key.isValid() +"\n";
-            result += "Adresa 2 na pracovisko: " + address.getAddressInUnsortedFile() + "\n";
+            result += "Kluc z datoveho objektu: " + workplace.getWorkplaceId() + "\n";
             result += "-------------------------------------------------------\n";
         }
         return result;

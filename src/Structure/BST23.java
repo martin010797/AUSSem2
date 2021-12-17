@@ -1744,7 +1744,7 @@ public class BST23<T extends  Comparable<T> & IData, V extends IData> {
             //nacitanie celeho suboru
             byte[] arrayOfDataBytes;
             try {
-                arrayOfDataBytes = new byte[nextAddress-1];
+                arrayOfDataBytes = new byte[nextAddress];
                 fileOfRecords.seek(0);
                 fileOfRecords.read(arrayOfDataBytes);
             }catch (IOException exception){

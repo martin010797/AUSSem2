@@ -106,10 +106,12 @@ public class Region implements IData<Region> {
             name = name.substring(0,validCharsInString);
             regionId = hlpInStream.readInt();
             isValid = hlpInStream.readBoolean();
-            treeOfTests = new BST23<PCRKeyRegion, Address>(
-                    "regionFiles/tests"+regionId,
-                    PCRKeyRegion.class,
-                    Address.class);
+            if (regionId != UNDEFINED){
+                treeOfTests = new BST23<PCRKeyRegion, Address>(
+                        "regionFiles/tests"+regionId,
+                        PCRKeyRegion.class,
+                        Address.class);
+            }
         } catch (IOException e) {
             throw new IllegalStateException("Error during conversion from byte array.");
         }

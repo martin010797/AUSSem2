@@ -15,13 +15,9 @@ public class ListRecordsFromFiles {
     private JPanel listRecordsPanel;
     private JButton unsortedPCRButton;
     private JButton addressRegionButton;
-    private JButton unsortedRegionButton;
     private JButton addressDistrictButton;
-    private JButton unsortedDistrictButton;
     private JButton addressWorkplaceButton;
-    private JButton unsortedWorkplaceButton;
     private JButton addresspersonButton;
-    private JButton unsortedPersonButton;
     private JButton goBackToMenuButton;
 
     public ListRecordsFromFiles(PCRSystem pcrSystem, menu m, JFrame frame, OutputForTests outputForTestsForm) {
@@ -41,54 +37,10 @@ public class ListRecordsFromFiles {
                 frame.setLocationRelativeTo(null);
             }
         });
-        unsortedRegionButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String result = pcrSystem.getAllRecordsRegionUnsorted();
-                outputForTestsForm.setTextForOutputPane(result);
-                frame.setContentPane(outputForTestsForm.getOutputForTestsPanel());
-                frame.pack();
-                frame.setVisible(true);
-                frame.setLocationRelativeTo(null);
-            }
-        });
-        unsortedDistrictButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String result = pcrSystem.getAllRecordsDistrictUnsorted();
-                outputForTestsForm.setTextForOutputPane(result);
-                frame.setContentPane(outputForTestsForm.getOutputForTestsPanel());
-                frame.pack();
-                frame.setVisible(true);
-                frame.setLocationRelativeTo(null);
-            }
-        });
-        unsortedWorkplaceButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String result = pcrSystem.getAllRecordsWorkplaceUnsorted();
-                outputForTestsForm.setTextForOutputPane(result);
-                frame.setContentPane(outputForTestsForm.getOutputForTestsPanel());
-                frame.pack();
-                frame.setVisible(true);
-                frame.setLocationRelativeTo(null);
-            }
-        });
-        unsortedPersonButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String result = pcrSystem.getAllRecordsPersonUnsorted();
-                outputForTestsForm.setTextForOutputPane(result);
-                frame.setContentPane(outputForTestsForm.getOutputForTestsPanel());
-                frame.pack();
-                frame.setVisible(true);
-                frame.setLocationRelativeTo(null);
-            }
-        });
         addressRegionButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String result = pcrSystem.listAllRegionAddressNodes();
+                String result = pcrSystem.listAllRegionNodes();
                 outputForTestsForm.setTextForOutputPane(result);
                 frame.setContentPane(outputForTestsForm.getOutputForTestsPanel());
                 frame.pack();
@@ -99,7 +51,7 @@ public class ListRecordsFromFiles {
         addressDistrictButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String result = pcrSystem.listAllDistrictsAddressNodes();
+                String result = pcrSystem.listAllDistrictNodes();
                 outputForTestsForm.setTextForOutputPane(result);
                 frame.setContentPane(outputForTestsForm.getOutputForTestsPanel());
                 frame.pack();
@@ -110,7 +62,7 @@ public class ListRecordsFromFiles {
         addressWorkplaceButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String result = pcrSystem.listAllWorkplaceAddressNodes();
+                String result = pcrSystem.listAllWorkplaceNodes();
                 outputForTestsForm.setTextForOutputPane(result);
                 frame.setContentPane(outputForTestsForm.getOutputForTestsPanel());
                 frame.pack();
@@ -121,7 +73,7 @@ public class ListRecordsFromFiles {
         addresspersonButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String result = pcrSystem.listAllPeopleAddressNodes();
+                String result = pcrSystem.listAllPeopleNodes();
                 outputForTestsForm.setTextForOutputPane(result);
                 frame.setContentPane(outputForTestsForm.getOutputForTestsPanel());
                 frame.pack();

@@ -24,16 +24,16 @@ public class PCR implements IData<PCR> {
     private boolean result;
     private String description;
 
-    //referencie budu nahradene adresami
+    //referencie nahradene
     /*private Person testedPerson;
     private Workplace workplace;
     private Region region;
     private District district;*/
 
-    private int testedPerson;
-    private int workplace;
-    private int region;
-    private int district;
+    private PersonKey testedPerson;
+    private WorkplaceKey workplace;
+    private RegionKey region;
+    private DistrictKey district;
 
     private boolean isValid;
 
@@ -49,7 +49,7 @@ public class PCR implements IData<PCR> {
                int pRegionId,
                boolean pResult,
                String pDescription,
-               int pPerson,
+               PersonKey pPerson,
                String pTestID){
         dateAndTimeOfTest = new Date(year,month-1,day,hour,minute,second);
         patientId = pPatienId;
@@ -67,8 +67,12 @@ public class PCR implements IData<PCR> {
         regionId = pRegionId;
         result = pResult;
         description = pDescription;
-        testedPerson = pPerson;
         isValid = true;
+        testedPerson = pPerson;
+        //testedPerson = new PersonKey(patientId);
+        district = new DistrictKey(districtId);
+        region = new RegionKey(regionId);
+        workplace = new WorkplaceKey(workplaceId);
     }
 
     public PCR(){
@@ -81,10 +85,10 @@ public class PCR implements IData<PCR> {
         result = false;
         description = EMPTY;
         isValid = false;
-        testedPerson = UNDEFINED;
-        workplace = UNDEFINED;
-        region = UNDEFINED;
-        district = UNDEFINED;
+        testedPerson = null;
+        workplace = null;
+        region = null;
+        district = null;
     }
 
     @Override
@@ -161,10 +165,10 @@ public class PCR implements IData<PCR> {
             hlpOutStream.writeInt(regionId);
 
             //ukladanie adries
-            hlpOutStream.writeInt(testedPerson);
-            hlpOutStream.writeInt(workplace);
-            hlpOutStream.writeInt(district);
-            hlpOutStream.writeInt(region);
+            //hlpOutStream.writeInt(testedPerson);
+            //hlpOutStream.writeInt(workplace);
+            //hlpOutStream.writeInt(district.getDistrictId());
+            //hlpOutStream.writeInt(region);
 
             hlpOutStream.writeBoolean(result);
             hlpOutStream.writeBoolean(isValid);
@@ -225,11 +229,10 @@ public class PCR implements IData<PCR> {
             districtId = hlpInStream.readInt();
             regionId = hlpInStream.readInt();
 
-            //ukladanie adries
-            testedPerson = hlpInStream.readInt();
-            workplace = hlpInStream.readInt();
-            district = hlpInStream.readInt();
-            region = hlpInStream.readInt();
+            testedPerson = new PersonKey(patientId);
+            workplace = new WorkplaceKey(workplaceId);
+            district = new DistrictKey(districtId);
+            region = new RegionKey(regionId);
 
             result = hlpInStream.readBoolean();
             isValid = hlpInStream.readBoolean();
@@ -251,11 +254,10 @@ public class PCR implements IData<PCR> {
         //result 1
         //id pre workplace,region a district(3* integer)
         //validita 1
-        //adresy pre person,workplace,region a district(4*integer)
         return ((MAX_LENGTH_OF_ID_NUMBER*Character.BYTES)+
                 (MAX_LENGTH_OF_DESCRIPTION*Character.BYTES)+
                 (MAX_LENGTH_OF_PCR_ID*Character.BYTES)+
-                (16*Integer.BYTES)+2);
+                (12*Integer.BYTES)+2);
     }
 
     @Override
@@ -332,35 +334,35 @@ public class PCR implements IData<PCR> {
         this.description = description;
     }
 
-    public int getPerson() {
+    public PersonKey getPerson() {
         return testedPerson;
     }
 
-    public void setPerson(int person) {
+    public void setPerson(PersonKey person) {
         this.testedPerson = person;
     }
 
-    public int getWorkplace() {
+    public WorkplaceKey getWorkplace() {
         return workplace;
     }
 
-    public void setWorkplace(int workplace) {
+    public void setWorkplace(WorkplaceKey workplace) {
         this.workplace = workplace;
     }
 
-    public int getRegion() {
+    public RegionKey getRegion() {
         return region;
     }
 
-    public void setRegion(int region) {
+    public void setRegion(RegionKey region) {
         this.region = region;
     }
 
-    public int getDistrict() {
+    public DistrictKey getDistrict() {
         return district;
     }
 
-    public void setDistrict(int district) {
+    public void setDistrict(DistrictKey district) {
         this.district = district;
     }
 }

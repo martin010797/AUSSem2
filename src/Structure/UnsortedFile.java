@@ -325,7 +325,7 @@ public class UnsortedFile<T extends IData> {
             //nacitanie celeho suboru
             byte[] arrayOfDataBytes;
             try {
-                arrayOfDataBytes = new byte[nextAddress-1];
+                arrayOfDataBytes = new byte[nextAddress];
                 fileOfRecords.seek(0);
                 fileOfRecords.read(arrayOfDataBytes);
             }catch (IOException exception){

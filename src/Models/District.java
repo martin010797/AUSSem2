@@ -105,10 +105,12 @@ public class District implements IData<District> {
             name = name.substring(0,validCharsInString);
             districtId = hlpInStream.readInt();
             isValid = hlpInStream.readBoolean();
-            treeOfTests = new BST23<PCRKeyDistrict, Address>(
-                    "districtFiles/tests"+districtId,
-                    PCRKeyDistrict.class,
-                    Address.class);
+            if (districtId != UNDEFINED){
+                treeOfTests = new BST23<PCRKeyDistrict, Address>(
+                        "districtFiles/tests"+districtId,
+                        PCRKeyDistrict.class,
+                        Address.class);
+            }
         } catch (IOException e) {
             throw new IllegalStateException("Error during conversion from byte array.");
         }
